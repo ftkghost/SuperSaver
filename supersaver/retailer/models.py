@@ -13,6 +13,10 @@ class Retailer (models.Model):
     country = models.ForeignKey(Country, null=False, related_name='retailers')
     datasource = models.ForeignKey(DataSource, null=False, related_name='retailers')
 
+    def save(self, **kwargs):
+        self.name = self.name.lower()
+        super(Retailer, self).save(**kwargs)
+
     def __repr__(self):
         return 'Retailer: id={0}, name={1}, display_name={2}, site={3}, logo={4}, country={5}, datasource={6}'\
             .format(self.pk, self.name, self.display_name,

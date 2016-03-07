@@ -42,15 +42,6 @@ class Product (models.Model):
 
     active = models.BooleanField(default=True)
 
-    # def save(self, **kwargs):
-    #     if isinstance(self.promotion_start_date, int):
-    #         self.promotion_start_date = datetime.fromtimestamp(self.promotion_start_date,
-    #                                                            tz=django_timezone.get_current_timezone())
-    #     if isinstance(self.promotion_end_date, int):
-    #         self.promotion_end_date = datetime.fromtimestamp(self.promotion_end_date,
-    #                                                          tz=django_timezone.get_current_timezone())
-    #     super(Product, self).save(**kwargs)
-
     def __repr__(self):
         return 'Product: id={0}, retailer={1}, title={2}, desc={3}, ' \
                'price={4}, unit={5}, saved={6}' \

@@ -13,6 +13,10 @@ class Region(models.Model):
     parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, default=None, related_name='sub_regions')
     country = models.ForeignKey(Country, related_name='regions')
 
+    def save(self, **kwargs):
+        self.name = self.name.lower()
+        super(Region, self).save(**kwargs)
+
     def __repr__(self):
         return "Region: id={0}, " \
                "name={1}, " \

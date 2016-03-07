@@ -9,6 +9,10 @@ class Category(models.Model):
     active = models.BooleanField(default=True, null=False)
     parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, default=None, related_name='subcategories')
 
+    def save(self, **kwargs):
+        self.name = self.name.lower()
+        super(Category, self).save(**kwargs)
+
     def __repr__(self):
         return "Category: id={0}, name={1}, display_name={2}, active={3}, parent={4}, level={5}"\
             .format(self.pk, self.name, self.display_name, self.active, self.parent_id, self.level)

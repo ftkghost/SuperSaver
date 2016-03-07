@@ -22,6 +22,10 @@ class Store(models.Model):
     created_time = models.DateTimeField(auto_now_add=True)
     updated_time = models.DateTimeField(auto_now=True)
 
+    def save(self, **kwargs):
+        self.name = self.name.lower()
+        super(Store, self).save(**kwargs)
+
     def __repr__(self):
         return "Store: id={0}, " \
                "retailer={1}, region={2}, " \

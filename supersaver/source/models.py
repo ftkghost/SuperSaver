@@ -12,6 +12,10 @@ class DataSource (models.Model):
     logo_url = models.URLField(max_length=256, null=True, blank=False)
     country = models.ForeignKey(Country, null=False, related_name='datasources')
 
+    def save(self, **kwargs):
+        self.name = self.name.lower()
+        super(DataSource, self).save(**kwargs)
+
     def __repr__(self):
         return 'DataSource: id={0}, name={1}, display_name={2}, site={3}, logo={4}, country={5}' \
             .format(self.id, self.name, self.display_name,

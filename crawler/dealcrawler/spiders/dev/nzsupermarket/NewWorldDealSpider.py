@@ -1,0 +1,5 @@
+# retailer_model(name="New World",
+#                type=0,
+#                site="http://www.newworld.co.nz",
+#                stores_url="http://www.newworld.co.nz/savings/",
+#                deals_url="http://www.newworld.co.nz/savings/"),

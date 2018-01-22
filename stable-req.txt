@@ -39,6 +39,8 @@ pytz==2017.3
 queuelib==1.4.2
 scipy==1.0.0
 Scrapy==1.5.0
+scrapy-djangoitem==1.1.1
+scrapyd==1.2.0
 service-identity==17.0.0
 simplegeneric==0.8.1
 six==1.11.0

@@ -16,7 +16,7 @@ class FreshChoiceSpecialDealSpider(SpecialDealAllStoresSiteSpider):
                 "&view=map&format=raw&searchall=1&Itemid=136&catid=-1&tagid=-1&featstate=0"
 
     def __init__(self, *args, **kwargs):
-        super(FreshChoiceSpecialDealSpider, self).__init__(
+        super().__init__(
             RETAILER_FRESH_CHOICE,
             self.__class__.store_url,
             self.__class__.region_url,

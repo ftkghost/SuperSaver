@@ -26,7 +26,7 @@ class SpecialDealAllStoresSiteSpider(scrapy.Spider):
     }
 
     def __init__(self, retailer_id, store_list_url, region_list_url, *args, **kwargs):
-        super(SpecialDealAllStoresSiteSpider, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.retailer = Retailer.objects.get(id=retailer_id)
         self.region_list_url = region_list_url
         self.store_list_url = store_list_url

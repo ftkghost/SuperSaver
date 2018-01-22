@@ -15,7 +15,7 @@ class Region(models.Model):
 
     def save(self, **kwargs):
         self.name = self.name.lower()
-        super(Region, self).save(**kwargs)
+        super().save(**kwargs)
 
     def __repr__(self):
         return "Region: id={0}, " \

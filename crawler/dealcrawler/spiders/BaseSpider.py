@@ -52,7 +52,7 @@ class BaseSpider (scrapy.Spider):
     user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.97 Safari/537.36'
 
     def __init__(self, datasource_id, country_code, start_urls, host, *args, **kwargs):
-        super(BaseSpider, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.start_urls = [start_urls] if isinstance(start_urls, str) else start_urls
         self.default_http_headers = {
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',

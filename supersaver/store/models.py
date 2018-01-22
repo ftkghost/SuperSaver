@@ -24,7 +24,7 @@ class Store(models.Model):
 
     def save(self, **kwargs):
         self.name = self.name.lower()
-        super(Store, self).save(**kwargs)
+        super().save(**kwargs)
 
     def __repr__(self):
         return "Store: id={0}, " \

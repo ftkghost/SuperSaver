@@ -20,7 +20,7 @@ class SuperValueSpecialDealSpider(SpecialDealAllStoresSiteSpider):
     region_url = "http://supervalue.co.nz/stores"
 
     def __init__(self, *args, **kwargs):
-        super(SuperValueSpecialDealSpider, self).__init__(
+        super().__init__(
             RETAILER_SUPERVALUE,
             self.__class__.store_list_url,
             self.__class__.region_url,

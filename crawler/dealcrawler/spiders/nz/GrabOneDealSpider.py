@@ -29,7 +29,7 @@ class GrabOneDealSpider(BaseSpider):
     DEAL_IMAGE_URL_FORMAT = 'http://main-cdn.grabone.co.nz/goimage/fullsize/{0}'
 
     def __init__(self, *args, **kwargs):
-        super(GrabOneDealSpider, self).__init__(
+        super().__init__(
             DATASOURCE_ID_GRABONE_CO_NZ,
             'NZ',
             'http://new.grabone.co.nz/auckland/search?limit=100&sortby=new',

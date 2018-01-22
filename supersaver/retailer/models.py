@@ -15,7 +15,7 @@ class Retailer (models.Model):
 
     def save(self, **kwargs):
         self.name = self.name.lower()
-        super(Retailer, self).save(**kwargs)
+        super().save(**kwargs)
 
     def __repr__(self):
         return 'Retailer: id={0}, name={1}, display_name={2}, site={3}, logo={4}, country={5}, datasource={6}'\

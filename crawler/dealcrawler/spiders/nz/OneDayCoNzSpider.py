@@ -31,7 +31,7 @@ class OneDayCoNzSpider(BaseSpider):
 
     def __init__(self, *args, **kwargs):
         # TODO: http://1-day.winecentral.co.nz/collections/all
-        super(OneDayCoNzSpider, self).__init__(
+        super().__init__(
             DATASOURCE_ID_1_DAY_CO_NZ,
             'NZ',
             'https://www.1-day.co.nz/',

@@ -14,7 +14,7 @@ class DataSource (models.Model):
 
     def save(self, **kwargs):
         self.name = self.name.lower()
-        super(DataSource, self).save(**kwargs)
+        super().save(**kwargs)
 
     def __repr__(self):
         return 'DataSource: id={0}, name={1}, display_name={2}, site={3}, logo={4}, country={5}' \

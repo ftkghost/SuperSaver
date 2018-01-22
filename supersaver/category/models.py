@@ -11,7 +11,7 @@ class Category(models.Model):
 
     def save(self, **kwargs):
         self.name = self.name.lower()
-        super(Category, self).save(**kwargs)
+        super().save(**kwargs)
 
     def __repr__(self):
         return "Category: id={0}, name={1}, display_name={2}, active={3}, parent={4}, level={5}"\

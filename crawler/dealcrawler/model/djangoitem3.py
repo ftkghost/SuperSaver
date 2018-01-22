@@ -5,7 +5,8 @@ from scrapy.item import Field, Item, ItemMeta
 class DjangoItemMeta(ItemMeta):
 
     def __new__(mcs, class_name, bases, attrs):
-        cls = super(DjangoItemMeta, mcs).__new__(mcs, class_name, bases, attrs)
+        #cls = super(DjangoItemMeta, mcs).__new__(mcs, class_name, bases, attrs)
+        cls = super().__new__(mcs, class_name, bases, attrs)
         cls.fields = cls.fields.copy()
 
         if cls.django_model:
@@ -28,7 +29,7 @@ class DjangoItem(Item, metaclass=DjangoItemMeta):
     django_model = None
 
     def __init__(self, *args, **kwargs):
-        super(DjangoItem, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._instance = None
         self._errors = None
 

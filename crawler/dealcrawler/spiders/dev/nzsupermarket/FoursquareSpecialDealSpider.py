@@ -11,7 +11,7 @@ class FoursquareSpecialDealSpider(scrapy.Spider):
     name = "foursquare.co.nz"
 
     def __init__(self, *args, **kwargs):
-        super(FoursquareSpecialDealSpider, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.retailer = Retailer.objects.get(id=RETAILER_FOURSQUARE)
         # http://www.foursquare.co.nz/promotions-competitions/
 

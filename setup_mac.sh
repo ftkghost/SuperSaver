@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# * Install nginx (linux)
+# * Install mysql
+
 # Pillow dependencies
 brew install libtiff libjpeg webp little-cms2
 

@@ -26,13 +26,13 @@ class GrabOneDealSpider(BaseSpider):
         'DOWNLOAD_DELAY': 3
     }
 
-    DEAL_IMAGE_URL_FORMAT = 'http://main-cdn.grabone.co.nz/goimage/fullsize/{0}'
+    DEAL_IMAGE_URL_FORMAT = 'https://main-cdn.grabone.co.nz/goimage/fullsize/{0}'
 
     def __init__(self, *args, **kwargs):
         super().__init__(
             DATASOURCE_ID_GRABONE_CO_NZ,
             'NZ',
-            'http://new.grabone.co.nz/auckland/search?limit=100&sortby=new',
+            'https://new.grabone.co.nz/auckland/search?limit=100&sortby=new',
             'new.grabone.co.nz',
             *args, **kwargs)
         self.category_by_name = {}
@@ -47,8 +47,8 @@ class GrabOneDealSpider(BaseSpider):
             data = region_mapping[region_name.lower()]
             data['region_url'] = region_url
 
-        for cat_elem in response.xpath('//ul[@id="category-dropdown"]/li'):
-            category_name = extract_first_value_with_xpath(cat_elem, './a/text()')
+        for cat_elem in response.xpath('//ul[@class="mega-menu__lvl-one-categories"]/li'):
+            category_name = extract_first_value_with_xpath(cat_elem, './a/div[@class="mega-menu__lvl-one-item-name"]/text()')
             if category_name.lower() == 'all categories':
                 continue
             category_url = extract_first_value_with_xpath(cat_elem, './a/@href')

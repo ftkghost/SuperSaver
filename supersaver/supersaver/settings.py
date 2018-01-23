@@ -47,7 +47,7 @@ INSTALLED_APPS = [
     'retailer',
     'store',
     'product',
-    # 'device',
+    'device',
 ]
 
 MIDDLEWARE_CLASSES = [

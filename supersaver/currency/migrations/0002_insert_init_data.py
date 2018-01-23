@@ -21,6 +21,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('currency', '0001_initial'),
+        ('country', '0002_insert_init_data'),
     ]
 
     operations = [

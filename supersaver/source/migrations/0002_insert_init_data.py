@@ -37,6 +37,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('source', '0001_initial'),
+        ('country', '0002_insert_init_data'),
     ]
 
     operations = [

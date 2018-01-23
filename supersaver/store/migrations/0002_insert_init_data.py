@@ -35,6 +35,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('store', '0001_initial'),
+        ('region', '0002_insert_init_data'),
         ('retailer', '0002_insert_init_data'),
     ]
 

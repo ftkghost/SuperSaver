@@ -1,14 +1,15 @@
 #!/bin/bash
 
-# * Install nginx (linux)
-# * Install mysql
+# Prepare environment for Scrapy on Mac OSX
+xcode-select --install
 
 # Pillow dependencies
 brew install libtiff libjpeg webp little-cms2
 
-# Prepare environment for Scrapy on Mac OSX
-xcode-select --install
+# * Install mysql
+brew install mysql
+# * Install nginx (linux)
 
-pip install -r stable-req.txt
+pip install -r requirements.txt
 
 ./patches/apply_patches.sh

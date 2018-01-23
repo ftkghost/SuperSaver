@@ -10,8 +10,8 @@ class Region(models.Model):
     name = models.CharField(max_length=128, null=False, blank=False, db_index=True)
     display_name = models.CharField(max_length=128, null=False, blank=False)
     active = models.BooleanField(default=True, null=False)
-    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, default=None, related_name='sub_regions')
-    country = models.ForeignKey(Country, related_name='regions')
+    parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, default=None, related_name='sub_regions')
+    country = models.ForeignKey(Country, on_delete=models.PROTECT, related_name='regions')
 
     def save(self, **kwargs):
         self.name = self.name.lower()

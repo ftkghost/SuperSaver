@@ -15,9 +15,9 @@ class Product (models.Model):
     Product got special price during promotion date.
     """
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
-    retailer = models.ForeignKey(Retailer, null=False, related_name='+')
+    retailer = models.ForeignKey(Retailer, on_delete=models.PROTECT, null=False, related_name='+')
     # Freshchoice and Supervalue can't get product store.
-    store = models.ForeignKey(Store, null=True, related_name='+')
+    store = models.ForeignKey(Store, on_delete=models.SET_NULL, null=True, related_name='+')
 
     title = models.CharField(max_length=256)
     # Product brief decription combine with quantity like 3 packs, 250g, 2kg etc. (freshchoice)
@@ -59,7 +59,7 @@ class ProductProperty (Property):
     """
     Product property bag.
     """
-    product = models.ForeignKey(Product, null=False, related_name='properties')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, null=False, related_name='properties')
 
     def __repr__(self):
         return 'ProductProperty: id={0}, name={1}, value={2}, product={3}'.format(
@@ -71,7 +71,7 @@ class ProductImage (models.Model):
     Product image
     """
     # Pak'n save product has no image. (a product may have 0 or more images.)
-    product = models.ForeignKey(Product, null=False, related_name='product_images')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, null=False, related_name='product_images')
     unique_hash = models.CharField(max_length=64, unique=True, null=False, blank=False)
     original_url = models.CharField(max_length=512, null=False, blank=False)
 

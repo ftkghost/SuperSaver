@@ -8,8 +8,8 @@ class Store(models.Model):
     """
     Stores
     """
-    retailer = models.ForeignKey(Retailer, null=False, related_name='stores')
-    region = models.ForeignKey(Region, null=False, related_name='stores')
+    retailer = models.ForeignKey(Retailer, on_delete=models.PROTECT, null=False, related_name='stores')
+    region = models.ForeignKey(Region, on_delete=models.PROTECT, null=False, related_name='stores')
     name = models.CharField(max_length=256, null=False, blank=False)
     tel = models.CharField(max_length=32, null=True, blank=False)
     address = models.CharField(max_length=512, null=True, blank=False)

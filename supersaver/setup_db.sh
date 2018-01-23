@@ -1,10 +1,10 @@
 #!/bin/bash
 set -e
 mysql -uroot -p<<EOF
-drop database if exists SuperSaver;
-create database SuperSaver charset=utf8;
-GRANT ALL PRIVILEGES on SuperSaver.* to 'supersaver'@'localhost';
-flush PRIVILEGES;
+DROP DATABASE IF EXISTS SuperSaver;
+CREATE DATABASE SuperSaver CHARSET=utf8;
+GRANT ALL PRIVILEGES ON SuperSaver.* TO 'supersaver'@'localhost';
+FLUSH PRIVILEGES;
 EOF
 ./manage.py makemigrations
 ./manage.py migrate

@@ -53,6 +53,7 @@ class BaseSpider (scrapy.Spider):
 
     def __init__(self, datasource_id, country_code, start_urls, host, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.logging_level = logging.DEBUG
         self.start_urls = [start_urls] if isinstance(start_urls, str) else start_urls
         self.default_http_headers = {
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -123,6 +124,10 @@ class BaseSpider (scrapy.Spider):
         if referer is not None:
             headers['Referer'] = referer
         return scrapy.http.Request(url, callback=callback, headers=headers, **kwargs)
+
+    def log(self, message, level=logging.DEBUG, **kw):
+        if level >= self.logging_level:
+            super().log(message, level, **kw)
 
     def log_debug(self, msgformat, *args, **kwargs):
         msg = msgformat.format(*args, **kwargs)

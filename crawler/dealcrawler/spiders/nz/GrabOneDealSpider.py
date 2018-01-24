@@ -36,6 +36,7 @@ class GrabOneDealSpider(BaseSpider):
             'new.grabone.co.nz',
             *args, **kwargs)
         self.category_by_name = {}
+        self.logging_level = logging.DEBUG
 
     def parse(self, response):
         region_mapping = {name: {'region': self.region_by_name[name]} for name in self.region_by_name}
@@ -47,11 +48,11 @@ class GrabOneDealSpider(BaseSpider):
             data = region_mapping[region_name.lower()]
             data['region_url'] = region_url
 
-        for cat_elem in response.xpath('//ul[@class="mega-menu__lvl-one-categories"]/li'):
-            category_name = extract_first_value_with_xpath(cat_elem, './a/div[@class="mega-menu__lvl-one-item-name"]/text()')
+        for cat_elem in response.xpath('//div[@id="search-filter-categories-menu"]/ul/li/div/label/a'):
+            category_name = extract_first_value_with_xpath(cat_elem, './text()')
             if category_name.lower() == 'all categories':
                 continue
-            category_url = extract_first_value_with_xpath(cat_elem, './a/@href')
+            category_url = extract_first_value_with_xpath(cat_elem, './@href')
             category_url = response.urljoin(category_url)
             self.category_by_name[category_name] = {
                 'category_name': category_name,
@@ -78,7 +79,7 @@ class GrabOneDealSpider(BaseSpider):
 
     def parse_paginated_deals_page(self, response):
         pages = 0
-        for page_url in extract_values_with_xpath(response, '//ul[@class="pager pagination"]/li/a/@href'):
+        for page_url in extract_values_with_xpath(response, '//ul[@class="pagination"]/li/a/@href'):
             value = 0
             if page_url is not None:
                 m = re.search('page=(?P<pages>[0-9]+)', page_url)
@@ -86,7 +87,7 @@ class GrabOneDealSpider(BaseSpider):
                     value = int(m.group('pages'))
             if value > pages:
                 pages = value
-        self.log('Total pages: {0}'.format(pages))
+        self.log('#Total pages: {0} in {1}'.format(pages, response.url))
         # Crawl paginated deals
         for i in range(1, pages+1):
             query = '?sortby=new&page={0}'.format(i)
@@ -101,15 +102,10 @@ class GrabOneDealSpider(BaseSpider):
 
     def parse_deals_page(self, response):
         index = 0
-        for deal_elem in response.xpath('//ul[@id="grid"]/li[contains(@class, "product-panel")]'):
+        for deal_elem in response.xpath('//div[@id="search-grid-listings"]/article/div/a'):
             index += 1
-            data = extract_first_value_with_xpath(deal_elem, './@data-tiledata')
-            if data is None:
-                # ignore the side-bar element
-                continue
-            # noinspection PyBroadException
             try:
-                data = self.parse_deal(response, first_elem_with_xpath(deal_elem, './div'), json_loads(data))
+                data = self.parse_deal(response, deal_elem)
             except:
                 data = None
                 self.log("Failed to parse deal {0} in {1}\n"
@@ -126,7 +122,7 @@ class GrabOneDealSpider(BaseSpider):
                 meta=data)
 
     def parse_deal(self, response, elem, meta):
-        retailer_name = extract_first_value_with_xpath(elem, './/div[@class="deal-vendor"]/text()')
+        retailer_name = extract_first_value_with_xpath(elem, './section/header/p[@class="listing-vendor"]/text()')
         retailer = self._get_retailer(retailer_name)
         if retailer is None:
             retailer = Retailer()
@@ -137,7 +133,7 @@ class GrabOneDealSpider(BaseSpider):
             retailer.save()
             self._add_or_update_retailer(retailer)
 
-        url = extract_first_value_with_xpath(elem, './a/@href')
+        url = extract_first_value_with_xpath(elem, './@href')
         landing_page = response.urljoin(url)
         prod = self._get_prod(landing_page)
         if prod is None:
@@ -265,7 +261,7 @@ class GrabOneDealSpider(BaseSpider):
         return {}
 
     def parse_date_range(self, date_range_str):
-        tz_delta = datetime.now() - datetime.utcnow() 
+        tz_delta = datetime.now() - datetime.utcnow()
         # parse date time as UTC time
         date_pair_str = date_range_str.split('|')[0]
         try:

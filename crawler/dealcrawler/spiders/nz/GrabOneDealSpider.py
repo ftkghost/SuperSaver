@@ -3,9 +3,9 @@ import re
 import sys
 import logging
 import traceback
-from json import loads as json_loads
+from json import loads as json_loads, dumps as json_stringify
 from urllib.parse import urlparse
-from datetime import datetime
+from datetime import datetime, timedelta
 from dateutil.parser import parse as parse_date
 
 from retailer.models import Retailer
@@ -121,7 +121,7 @@ class GrabOneDealSpider(BaseSpider):
                 referer=response.url,
                 meta=data)
 
-    def parse_deal(self, response, elem, meta):
+    def parse_deal(self, response, elem):
         retailer_name = extract_first_value_with_xpath(elem, './section/header/p[@class="listing-vendor"]/text()')
         retailer = self._get_retailer(retailer_name)
         if retailer is None:
@@ -139,34 +139,55 @@ class GrabOneDealSpider(BaseSpider):
         if prod is None:
             prod = Product()
 
-        date_range = meta['meta']
-        start_time, end_time = self.parse_date_range(date_range)
+        #date_range = meta['meta']
+        #start_time, end_time = self.parse_date_range(date_range)
+        #prod.promotion_start_date = start_time
+        #prod.promotion_end_date = end_time
 
         prod.active = True
-        prod.title = meta['title']
-        prod.description = extract_first_value_with_xpath(elem, './a/span/img/@alt')
+        value = elem.xpath('./section/header/h3[1]/text()').extract()
+        if value:
+            value = ''.join(value).strip(' \t\n\r')
+            prod.title = value
+        prod.description = extract_first_value_with_xpath(elem, './figure/figcaption/p/text()')
+        prod.description = extract_first_value_with_xpath(elem, './figure/img/@alt')
         prod.landing_page = response.urljoin(url)
-        prod.promotion_start_date = start_time
-        prod.promotion_end_date = end_time
-        price_elem = first_elem_with_xpath(elem, './/div[@class="price-container"]')
+
+        price_elem = first_elem_with_xpath(elem, './/div[@class="listing-price-container"]')
         if price_elem is None:
             return None
-        value = extract_first_value_with_xpath(price_elem, './span[@class="price"]/text()')
-        prod.price = 0 if value is None else sanitize_price(value)
-        value = extract_first_value_with_xpath(price_elem, './span[@class="value"]/text()')
-        prod.saved = value
-        #value = extract_first_value_with_xpath(price_elem, './span[@class="from"]/text()')
-        #prod['from'] = value if value is None else value.strip()
 
-        image_url = extract_first_value_with_xpath(elem, './a/span/img/@src')
-        if image_url.find('placeholder') > 0:
-            image_url = extract_first_value_with_xpath(elem, './a/span/img/@data-go-lazy-src')
-        image_url_path = urlparse(image_url).path
-        image_url = self.__class__.DEAL_IMAGE_URL_FORMAT.format(image_url_path[image_url_path.rindex('/')+1:])
-        prod_image = ProductImage()
-        prod_image.product = prod
-        prod_image.original_url = image_url
-        prod_image.unique_hash = str(datetime.now().timestamp())
+        value = extract_first_value_with_xpath(price_elem, './div[@class="listing-price-current"]/span/text()')
+        original_price = 0 if (value is None or value == 'View offer') else sanitize_price(value)
+
+        value = price_elem.xpath('.//div[@class="listing-price-current"]/text()').extract()
+        if value:
+            value = ''.join(value).strip(' \t\n\r')
+        price = 0 if (value is None or len(value) == 0) else sanitize_price(value)
+        if price == 0:
+            value = extract_first_value_with_xpath(price_elem, './/div[@class="listing-price-per-item"]/text()')
+            price = 0 if (value is None or len(value) == 0) else sanitize_price(value)
+            if price > 0:
+                prod.price = price
+                prod.unit = 'each'
+            else:
+                prod.price = 0
+        else:
+            prod.price = price
+
+        if original_price > 0 and original_price > price:
+            prod.saved = 'from ${0}'.format(original_price)
+
+        image_url = extract_first_value_with_xpath(elem, './figure/img/@data-go-lazy-src')
+        prod_image = None
+        if image_url:
+            prod_image = ProductImage()
+            prod_image.product = prod
+            if image_url.startswith('http'):
+                prod_image.original_url = image_url
+            else:
+                prod_image.original_url = response.urljoin(image_url)
+            prod_image.unique_hash = str(datetime.now().timestamp())
 
         return {
             'prod': prod,
@@ -177,7 +198,7 @@ class GrabOneDealSpider(BaseSpider):
     def parse_deal_details_page(self, response):
         region = response.meta['region']
         retailer = response.meta['retailer']
-        self.retailer_by_name
+
         store = None
         prod = response.meta['prod']
         prod_image = response.meta['image']
@@ -194,6 +215,25 @@ class GrabOneDealSpider(BaseSpider):
             if 'category' not in data:
                 continue
             # TODO: Parse category   data['category']
+
+            start_time, end_time = None, None
+            if 'offers' in data:
+                offers = data['offers']
+                if 'validFrom' in offers:
+                    value = offers['validFrom']
+                    start_time = int(parse_date(value).timestamp())
+                if 'validThrough' in offers:
+                    value = offers['validThrough']
+                    end_time = int(parse_date(value).timestamp())
+            if not start_time:
+                start_time = int(datetime.now().timestamp())
+            if not end_time:
+                value = datetime.now() + timedelta(hours=24*7)
+                end_time = int(value.timestamp())
+
+            prod.promotion_start_date = start_time
+            prod.promotion_end_date = end_time
+
             prod_property = ProductProperty()
             prod_property.product = prod
             prod_property.name = make_internal_property_name('grabone_product_id')
@@ -202,6 +242,13 @@ class GrabOneDealSpider(BaseSpider):
         for script_text in extract_values_with_xpath(elem_root, './script[not(@type)]/text()'):
             if script_text.find('.viewProduct') < 0:
                 continue
+            idx = script_text.find('variants')
+            if idx > 0:
+                data = substr_surrounded_by_chars(script_text, ('[', ']'), idx)
+                variants = json_loads(data)
+                if len(variants) > 0 and 'buy_link' in variants[0] and len(variants[0]['buy_link']) > 0:
+                    prod.fast_buy_link = variants[0]['buy_link']
+
             idx = script_text.find('merchantLocations')
             if idx < 0:
                 self.log("Can't find merchantLocations in script, "
@@ -215,19 +262,24 @@ class GrabOneDealSpider(BaseSpider):
             location = merchant_locations[0]
 
             store_name = retailer.display_name
-            store_title = str.strip(location['title'])
-            lat, lng = location['lat'], location['lng']
-            address = str.strip(location['physical_address_plain_text'])
-            address = address.replace('\u00a0', ', ') if address is not None else None
-            if len(address) > 512:
-                self.log('Product {0}: Store address is too long ({1}).'.format(prod.landing_page, address))
-                address = address[:512]
+            lat, lng, address = None, None, None    # no physical store, website only
+            if ('lat' in location and len(location['lat']) > 0)\
+                    and ('lng' in location and len(location['lng']) > 0):
+                lat = float(location['lat'])
+                lng = float(location['lng'])
+            if 'physical_address_plain_text' in location:
+                address_value = str.strip(location['physical_address_plain_text'])
+                if len(address_value) > 0:
+                    address_value = address_value.replace('\u00a0', ', ') if address_value is not None else None
+                    if len(address_value) > 512:
+                        self.log('Product {0}: Store address is too long ({1}).'.format(prod.landing_page, address))
+                    address = address_value[:512]
             website, tel = None, None
             for contact_elem in response.xpath('//div[@class="supplier-info"]/a'):
                 if len(contact_elem.xpath('./i[contains(@class, "fa-globe")]')) > 0:
                     website = extract_first_value_with_xpath(contact_elem, './@href')
                 elif len(contact_elem.xpath('./i[contains(@class, "fa-phone")]')) > 0:
-                    tel = extract_first_value_with_xpath(contact_elem, './@tel')
+                    tel = extract_first_value_with_xpath(contact_elem, './text()')
             try:
                 store = retailer.stores.get(name=store_name, latitude=lat, longitude=lng)
             except Store.DoesNotExist:
@@ -240,6 +292,7 @@ class GrabOneDealSpider(BaseSpider):
             store.address = address
             store.website = website
             store.tel = tel
+            store.working_time = location['public_opening_hours']
             store.save()
 
         # Save product data to database

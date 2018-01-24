@@ -26,6 +26,7 @@ class Migration(migrations.Migration):
                 ('unit', models.CharField(blank=True, max_length=32)),
                 ('saved', models.CharField(max_length=64, null=True)),
                 ('landing_page', models.CharField(db_index=True, max_length=512)),
+                ('fast_buy_link', models.CharField(db_index=True, max_length=512, null=True)),
                 ('promotion_start_date', models.PositiveIntegerField()),
                 ('promotion_end_date', models.PositiveIntegerField()),
                 ('ready', models.BooleanField(default=False)),

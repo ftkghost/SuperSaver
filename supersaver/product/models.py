@@ -27,6 +27,7 @@ class Product (models.Model):
     unit = models.CharField(max_length=32, null=False, blank=True)
     saved = models.CharField(max_length=64, null=True, blank=False)
     landing_page = models.CharField(max_length=512, null=False, blank=False, db_index=True)
+    fast_buy_link = models.CharField(max_length=512, null=True, blank=False, db_index=True)
 
     promotion_start_date = models.PositiveIntegerField(null=False)
     promotion_end_date = models.PositiveIntegerField(null=False)
@@ -47,12 +48,12 @@ class Product (models.Model):
                'price={4}, unit={5}, saved={6}' \
                'store={7}, ' \
                'prom_start={8}, prom_end={9},' \
-               'detail={10}'\
+               'detail={10},fast_buy={11}'\
             .format(self.id, self.retailer_id, self.title, self.description,
                     self.price, self.unit, self.saved,
                     self.store_id,
                     self.promotion_start_date, self.promotion_end_date,
-                    self.landing_page)
+                    self.landing_page, self.fast_buy_link)
 
 
 class ProductProperty (Property):

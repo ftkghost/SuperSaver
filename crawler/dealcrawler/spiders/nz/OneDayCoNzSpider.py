@@ -42,26 +42,25 @@ class OneDayCoNzSpider(BaseSpider):
 
     def parse(self, response):
         # Top Ad Deals
-
-        for relative_url in extract_values_with_xpath(
-                response,
-                '//div[contains(@class, "main_holder")]//div[contains(@class, "top-ad")]//a/@href'):
+        deals = extract_values_with_xpath(
+            response, '//div[contains(@class, "main_holder")]//div[contains(@class, "top-image")]//a/@href')
+        for relative_url in deals:
             url = response.urljoin(relative_url)
             self.log("Deal url: %s" % url)
             yield self.create_request(url, self.parse_today_deals_list)
 
         # Home Page Deals
-        for relative_url in extract_values_with_xpath(
-                response,
-                '//div[contains(@class, "main_holder")]//div[contains(@class, "homepage")]/ul/li/a/@href'):
+        deals = extract_values_with_xpath(
+            response, '//div[contains(@class, "main_holder")]//div[contains(@class, "homepage")]/ul/li/a/@href')
+        for relative_url in deals:
             url = response.urljoin(relative_url)
             self.log("Deal url: %s" % url)
             yield self.create_request(url, self.parse_today_deals_list)
 
         # Side Bar Deals
-        for relative_url in extract_values_with_xpath(
-                response,
-                '//ul[@class="sidenav"]/li/a[contains(@class, "sidetab-apparel")]/@href'):
+        deals = extract_values_with_xpath(
+            response, '//ul[@class="sidenav"]/li/a[contains(@class, "sidetab-daily-deals")]/@href')
+        for relative_url in deals:
             url = response.urljoin(relative_url)
             self.log("Deal url: %s" % url)
             yield self.create_request(url, self.parse_today_deals_list)
@@ -70,9 +69,8 @@ class OneDayCoNzSpider(BaseSpider):
         # Alternative solution:
         # Use selenium to scroll down the page
         # chrome.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        script_content = \
-            extract_first_value_with_xpath(response,
-                                           '//div[@id="menu"]/script[contains(text(), ".countdown")]/text()')
+        script_content = extract_first_value_with_xpath(
+            response, '//div[@id="menu"]/script[contains(text(), ".countdown")]/text()')
         start_time, end_time = None, None
         if script_content is not None:
             matched = re.search(r'\.countdown\(([0-9]+)\)', script_content)
@@ -130,6 +128,7 @@ class OneDayCoNzSpider(BaseSpider):
             image_src = extract_first_value_with_xpath(deal_summary_elem,
                                                        './div[@class="image"]/img/@data-src')
         if image_src is None:
+            # Can't get deal image, go to deal detail page
             return self.create_request(url, self.parse_deal_details, meta={'deal': deal})
         else:
             image_src = response.urljoin(image_src)
@@ -141,7 +140,7 @@ class OneDayCoNzSpider(BaseSpider):
         image_src = \
             extract_first_value_with_xpath(
                 response,
-                '//div[contains(@class, "BasketForm")]//img[@class="product_details_image"]/@src')
+                '//div[contains(@class, "product-details")]//img[@itemprop="image"]/@src')
         # We currently only need image thumbnail.
         image_src = image_src.replace('_large', '_small')
         self._create_or_update_deal_in_db(deal, image_src)
@@ -172,6 +171,8 @@ class OneDayCoNzSpider(BaseSpider):
 
     @classmethod
     def get_daily_deal_utc_time(cls):
+
+        # Deal ends at 12 PM every day in nz time,
         now = datetime.utcnow()
         start_time = datetime(year=now.year, month=now.month, day=now.day,
                               hour=23, minute=0, second=0)

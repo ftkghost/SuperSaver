@@ -35,13 +35,14 @@ class LasooCoNzDealSpider(scrapy.Spider):
 
     }
 
-    JSONP_HOST = 'css.lasoomedia2.com.au'
     SVER = 'ikt3z7fsszp9rt201651'
     ORIGIN_URL = 'http://www.lasoo.co.nz/'
-    RETAILER_DETAIL_URL_FORMAT = 'http://css.lasoomedia2.com.au/api/catalogue;sver={0};' \
-                                 'domain=www.lasoo.co.nz;catalogueids={1}?jsonp={2}'
-    RETAILER_DEALS_URL_FORMAT = 'http://css.lasoomedia2.com.au/api/cataloguepage;sver={0};' \
-                                'domain=www.lasoo.co.nz;catalogueid={1};allpages=1?jsonp={2}'
+
+    JSONP_HOST = 'www.lasoo.co.nz'
+    RETAILER_INFO_URL_FORMAT = 'https://www.lasoo.co.nz/data.js?type=catalogue' \
+                               '&catalogueids={0}&jsonp={1}'
+    RETAILER_DEALS_URL_FORMAT = 'https://www.lasoo.co.nz/data.js?type=cataloguepage' \
+                                '&catalogueid={0}&allpages=1&jsonp=mf64748097'
 
     def __init__(self):
         random.seed(datetime.now().timestamp())
@@ -52,8 +53,8 @@ class LasooCoNzDealSpider(scrapy.Spider):
 
     def parse(self, response):
         for cat_elem in response.xpath('//ul[contains(@class, "catalogue-list")]/li/div/a'):
-            cat_detail_url = response.urljoin(cat_elem.extract_first_value_with_xpath('@href'))
-            cat_json_data = cat_elem.extract_first_value_with_xpath('@data')
+            cat_detail_url = response.urljoin(extract_first_value_with_xpath(cat_elem, '@href'))
+            cat_json_data = extract_first_value_with_xpath(cat_elem, '@data')
             data = json_loads(cat_json_data)
             if data['object'] == 'catalogue':
                 catalogue_id = data['objectid']
@@ -81,11 +82,11 @@ class LasooCoNzDealSpider(scrapy.Spider):
 
     @classmethod
     def _get_retailer_detail_url(cls, catalogue_id, jsonp_tag):
-        return cls.RETAILER_DETAIL_URL_FORMAT.format(cls.SVER, catalogue_id, jsonp_tag)
+        return cls.RETAILER_INFO_URL_FORMAT.format(catalogue_id, jsonp_tag)
 
     @classmethod
     def _get_deals_url(cls, catalogue_id, jsonp_tag):
-        return cls.RETAILER_DEALS_URL_FORMAT.format(cls.SVER, catalogue_id, jsonp_tag)
+        return cls.RETAILER_DEALS_URL_FORMAT.format(catalogue_id, jsonp_tag)
 
     @classmethod
     def _get_jsonp_response_data(cls, response_body, jsonp_tag=None):
@@ -110,28 +111,30 @@ class LasooCoNzDealSpider(scrapy.Spider):
         yield retailer_data
 
         deal_url = self.__class__._get_deals_url(response.meta['catalogue_id'], jsonp_tag)
+        meta = response.meta
+        meta['start_date'] = start_date
+        meta['end_date'] = end_date
         yield scrapy.Request(deal_url,
                              callback=self.parse_deals,
                              headers={
                                  'Accept': '*/*',
                                  'Accept-Language': 'en-US,en;q=0.8',
                                  'Host': self.__class__.JSONP_HOST,
-                                 'Referer': response.meta['referer'],
+                                 'Referer': meta['referer'],
                              },
-                             meta={
-                                 'jsonp_tag': jsonp_tag
-                             })
+                             meta=meta)
 
     def parse_deals(self, response):
         jsonp_tag = response.meta['jsonp_tag']
         deals_data = self._get_jsonp_response_data(response.body, jsonp_tag)
         for page in deals_data:
             offers = page['offers']
+            if offers is None:
+                continue
             for offer in offers:
-                offer_id = offer['id']
                 deal = {}
                 deal['id'] = offer['id']
                 deal['title'] = offer['title']
                 deal['image'] = offer['offerimage']['path']
-                deal['landing_page'] = urlparse.urljoin(self.__class__.ORIGIN_URL, offer['landingLink'])
+                deal['landing_page'] = response.urljoin(offer['landingLink'])
                 yield deal

@@ -3,8 +3,7 @@ import re
 import sys
 import logging
 import traceback
-from json import loads as json_loads, dumps as json_stringify
-from urllib.parse import urlparse
+from json import loads as json_loads
 from datetime import datetime, timedelta
 from dateutil.parser import parse as parse_date
 
@@ -294,12 +293,20 @@ class GrabOneDealSpider(BaseSpider):
             store.tel = tel
             store.working_time = location['public_opening_hours']
             store.save()
-
         # Save product data to database
         prod.retailer = retailer
-        prod.store = store
         prod.save()
         self._add_or_update_prod(prod)
+
+        added = False
+        for s in prod.stores.all():
+            if s.name == store.name \
+                    and s.latitude == store.latitude \
+                    and s.longitude == store.longitude:
+                added = True
+                break
+        if not added:
+            prod.stores.add(store)
         if prod_image is not None and prod_image.pk is None:
             try:
                 # TODO: Hash

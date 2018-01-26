@@ -40,3 +40,17 @@ class Store(models.Model):
                                                  self.website,
                                                  self.email,
                                                  self.address, self.active)
+
+
+class StoreProperty (models.Model):
+    name = models.CharField(max_length=64, null=False, blank=False)
+    value = models.CharField(max_length=1024, null=False, blank=True)
+    store = models.ForeignKey(Store, on_delete=models.CASCADE, null=False)
+
+    def __repr__(self):
+        return 'StoreProperty: id={0}, store={1}, name={2}, value={3}'.format(
+            self.pk,
+            self.store_id,
+            self.name,
+            self.value
+        )

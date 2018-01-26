@@ -17,7 +17,8 @@ class Product (models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     retailer = models.ForeignKey(Retailer, on_delete=models.PROTECT, null=False, related_name='+')
     # Freshchoice and Supervalue can't get product store.
-    store = models.ForeignKey(Store, on_delete=models.SET_NULL, null=True, related_name='+')
+    # A store may have multiple products, a product may also sell in multiple stores.
+    stores = models.ManyToManyField(Store, related_name='products')
 
     title = models.CharField(max_length=256)
     # Product brief decription combine with quantity like 3 packs, 250g, 2kg etc. (freshchoice)
@@ -46,12 +47,10 @@ class Product (models.Model):
     def __repr__(self):
         return 'Product: id={0}, retailer={1}, title={2}, desc={3}, ' \
                'price={4}, unit={5}, saved={6}' \
-               'store={7}, ' \
-               'prom_start={8}, prom_end={9},' \
-               'detail={10},fast_buy={11}'\
+               'prom_start={7}, prom_end={8},' \
+               'detail={9},fast_buy={10}'\
             .format(self.id, self.retailer_id, self.title, self.description,
                     self.price, self.unit, self.saved,
-                    self.store_id,
                     self.promotion_start_date, self.promotion_end_date,
                     self.landing_page, self.fast_buy_link)
 

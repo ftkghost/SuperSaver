@@ -1,12 +1,10 @@
 from django.db import models
-from django.utils import timezone as django_timezone
 
 from uuid import uuid4
-from datetime import datetime
 
 from retailer.models import Retailer
 from store.models import Store
-from category.models import Category
+from category.models import Category, SourceCategory
 from common.property import Property
 
 
@@ -20,15 +18,15 @@ class Product (models.Model):
     # A store may have multiple products, a product may also sell in multiple stores.
     stores = models.ManyToManyField(Store, related_name='products')
 
-    title = models.CharField(max_length=256)
+    title = models.CharField(max_length=256, null=False, blank=False)
     # Product brief decription combine with quantity like 3 packs, 250g, 2kg etc. (freshchoice)
-    description = models.CharField(max_length=512)
+    description = models.CharField(max_length=512, null=False, blank=True, default='')
     price = models.DecimalField(max_digits=11, decimal_places=2)
     # product unit, like each(ea), pack, bag, kg.
-    unit = models.CharField(max_length=32, null=False, blank=True)
-    saved = models.CharField(max_length=64, null=True, blank=False)
+    unit = models.CharField(max_length=32, null=False, blank=True, default='')
+    saved = models.CharField(max_length=64, null=True, blank=False, default=None)
     landing_page = models.CharField(max_length=512, null=False, blank=False, db_index=True)
-    fast_buy_link = models.CharField(max_length=512, null=True, blank=False, db_index=True)
+    fast_buy_link = models.CharField(max_length=512, null=True, blank=False, db_index=True, default=None)
 
     promotion_start_date = models.PositiveIntegerField(null=False)
     promotion_end_date = models.PositiveIntegerField(null=False)
@@ -39,6 +37,7 @@ class Product (models.Model):
 
     # Foursquare, New World and Pakn Save product can't get category information.
     categories = models.ManyToManyField(Category, related_name='+')
+    source_categories = models.ManyToManyField(SourceCategory, related_name='+')
     created_time = models.DateTimeField(auto_now_add=True)
     updated_time = models.DateTimeField(auto_now=True)
 

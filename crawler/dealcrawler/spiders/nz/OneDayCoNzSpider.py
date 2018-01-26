@@ -104,7 +104,6 @@ class OneDayCoNzSpider(BaseSpider):
         url = response.urljoin(relative_url)
         deal = ProductItem()
         deal['retailer'] = self.retailer
-        deal['store'] = self.store
         deal['landing_page'] = url
         deal['title'] = extract_first_value_with_xpath(deal_summary_elem, './div[@class="title"]/h2/text()')
         deal['description'] = extract_first_value_with_xpath(deal_summary_elem, './div[@class="title"]/h3/text()')
@@ -161,6 +160,8 @@ class OneDayCoNzSpider(BaseSpider):
             db_deal.landing_page = deal['landing_page']
             db_deal.active = True
             db_deal.save()
+        if db_deal.stores.count() == 0:
+            db_deal.stores.add(self.store)
         self._add_or_update_prod(db_deal)
         if not db_deal.product_images.filter(original_url=image_src).exists():
             # TODO: Hash

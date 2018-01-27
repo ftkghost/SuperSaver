@@ -3,14 +3,12 @@ import re
 import traceback
 from datetime import datetime, timedelta
 
-from supersaver.constants import RETAILER_NAME_1_DAY_CO_NZ
-from retailer.models import Retailer
-from product.models import Product
-from supersaver.constants import DATASOURCE_ID_1_DAY_CO_NZ
-
 from dealcrawler.model.items import ProductItem
 from dealcrawler.spiders.BaseSpider import BaseSpider
 from dealcrawler.util import *
+from retailer.models import Retailer
+from supersaver.constants import DATASOURCE_ID_1_DAY_CO_NZ
+from supersaver.constants import RETAILER_NAME_1_DAY_CO_NZ
 
 
 class OneDayCoNzSpider(BaseSpider):
@@ -47,7 +45,7 @@ class OneDayCoNzSpider(BaseSpider):
         for relative_url in deals:
             url = response.urljoin(relative_url)
             self.log("Deal url: %s" % url)
-            yield self.create_request(url, self.parse_today_deals_list)
+            yield self.create_request(url, self.parse_deals_list_from_response)
 
         # Home Page Deals
         deals = extract_values_with_xpath(
@@ -55,7 +53,7 @@ class OneDayCoNzSpider(BaseSpider):
         for relative_url in deals:
             url = response.urljoin(relative_url)
             self.log("Deal url: %s" % url)
-            yield self.create_request(url, self.parse_today_deals_list)
+            yield self.create_request(url, self.parse_deals_list_from_response)
 
         # Side Bar Deals
         deals = extract_values_with_xpath(
@@ -63,9 +61,9 @@ class OneDayCoNzSpider(BaseSpider):
         for relative_url in deals:
             url = response.urljoin(relative_url)
             self.log("Deal url: %s" % url)
-            yield self.create_request(url, self.parse_today_deals_list)
+            yield self.create_request(url, self.parse_deals_list_from_response)
 
-    def parse_today_deals_list(self, response):
+    def parse_deals_list_from_response(self, response):
         # Alternative solution:
         # Use selenium to scroll down the page
         # chrome.execute_script("window.scrollTo(0, document.body.scrollHeight);")
@@ -85,7 +83,7 @@ class OneDayCoNzSpider(BaseSpider):
             index += 1
             # noinspection PyBroadException
             try:
-                deal = self.parse_today_deal(response, deal_elem, start_time, end_time)
+                deal = self.parse_deal(response, deal_elem, start_time, end_time)
             except:
                 deal = None
                 self.log("Failed to parse deal {0} in {1}\n"
@@ -94,9 +92,9 @@ class OneDayCoNzSpider(BaseSpider):
                 continue
             yield deal
 
-    def parse_today_deal(self, response, deal_elem, start_time, end_time):
-        soldout = deal_elem.xpath('./div[@class="sold_home_product"]')
-        if len(soldout) > 0:
+    def parse_deal(self, response, deal_elem, start_time, end_time):
+        sold_out = deal_elem.xpath('./div[@class="sold_home_product"]')
+        if len(sold_out) > 0:
             # Deal is already sold out.
             return None
         deal_summary_elem = first_elem_with_xpath(deal_elem, './a')
@@ -106,13 +104,13 @@ class OneDayCoNzSpider(BaseSpider):
         deal['retailer'] = self.retailer
         deal['landing_page'] = url
         deal['title'] = extract_first_value_with_xpath(deal_summary_elem, './div[@class="title"]/h2/text()')
-        deal['description'] = extract_first_value_with_xpath(deal_summary_elem, './div[@class="title"]/h3/text()')
+        deal['description'] = extract_first_value_with_xpath(
+            deal_summary_elem, './div[@class="title"]/h3/text()', default='')
         price_elem = deal_summary_elem.xpath('./div[@class="price"]//span[@class="amount"]')
         amount = extract_first_value_with_xpath(price_elem, './text()')
         decimal_amount = extract_first_value_with_xpath(price_elem, './span/text()')
         price = amount + (decimal_amount if decimal_amount is not None else '')
         deal['price'] = sanitize_price(price)
-        deal['unit'] = ''
         saved = extract_first_value_with_xpath(deal_summary_elem, './div[@class="save day_colour"]/text()')
         if not saved:
             saved = extract_first_value_with_xpath(deal_summary_elem, './div[@class="why-pay"]/text()')
@@ -128,13 +126,13 @@ class OneDayCoNzSpider(BaseSpider):
                                                        './div[@class="image"]/img/@data-src')
         if image_src is None:
             # Can't get deal image, go to deal detail page
-            return self.create_request(url, self.parse_deal_details, meta={'deal': deal})
+            return self.create_request(url, self.parse_deal_image_from_response, meta={'deal': deal})
         else:
             image_src = response.urljoin(image_src)
-            self._create_or_update_deal_in_db(deal, image_src)
+            self._create_or_update_prod_in_db(deal, image_src, [self.store])
             return deal
 
-    def parse_deal_details(self, response):
+    def parse_deal_image_from_response(self, response):
         deal = response.meta['deal']
         image_src = \
             extract_first_value_with_xpath(
@@ -142,33 +140,8 @@ class OneDayCoNzSpider(BaseSpider):
                 '//div[contains(@class, "product-details")]//img[@itemprop="image"]/@src')
         # We currently only need image thumbnail.
         image_src = image_src.replace('_large', '_small')
-        self._create_or_update_deal_in_db(deal, image_src)
+        self._create_or_update_prod_in_db(deal, image_src, [self.store])
         yield deal
-
-    def _create_or_update_deal_in_db(self, deal, image_src):
-        db_deal = self._get_prod(deal['landing_page'])
-        if db_deal is None:
-            db_deal = deal.save()
-        else:
-            db_deal.title = deal['title']
-            db_deal.description = deal['description']
-            db_deal.price = deal['price']
-            db_deal.unit = deal['unit']
-            db_deal.saved = deal['saved']
-            db_deal.promotion_start_date = deal['promotion_start_date']
-            db_deal.promotion_end_date = deal['promotion_end_date']
-            db_deal.landing_page = deal['landing_page']
-            db_deal.active = True
-            db_deal.save()
-        if db_deal.stores.count() == 0:
-            db_deal.stores.add(self.store)
-        self._add_or_update_prod(db_deal)
-        if not db_deal.product_images.filter(original_url=image_src).exists():
-            # TODO: Hash
-            unique_hash = str(datetime.utcnow().timestamp())
-            db_deal.product_images.create(unique_hash=unique_hash,
-                                          original_url=image_src)
-        return db_deal
 
     @classmethod
     def get_daily_deal_utc_time(cls):

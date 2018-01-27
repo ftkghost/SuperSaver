@@ -5,7 +5,7 @@
 # See documentation in:
 # http://doc.scrapy.org/en/latest/topics/items.html
 
-from .djangoitem3 import DjangoItem
+from scrapy_djangoitem import DjangoItem
 
 from product.models import Product, ProductProperty
 from store.models import Store

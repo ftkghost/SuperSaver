@@ -153,3 +153,11 @@ def exists_elem_with_xpath(selector, xpath, expected_value=None, comparer=None):
         if comp_result:
             return True
     return False
+
+
+def none_if_not_in(dict, key):
+    return None if key not in dict else dict[key]
+
+
+def empty_str_if_not_in(dict, key):
+    return '' if key not in dict else dict[key]

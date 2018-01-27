@@ -8,6 +8,12 @@ class Property (models.Model):
     class Meta:
         abstract = True
 
+    def value_equals_to(self, other):
+        if other is not Property:
+            return False
+        return self.name == other.name \
+            and self.value == other.value
+
     def __repr__(self):
         return 'Property: id={0}, name={1}, value={2}'\
             .format(self.pk, self.name, self.value)

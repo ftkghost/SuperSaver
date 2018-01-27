@@ -18,7 +18,8 @@ class Migration(migrations.Migration):
             name='Store',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=256)),
+                ('name', models.CharField(db_index=True, max_length=256)),
+                ('display_name', models.CharField(max_length=256)),
                 ('tel', models.CharField(max_length=32, null=True)),
                 ('address', models.CharField(max_length=512, null=True)),
                 ('working_time', models.CharField(max_length=512, null=True)),
@@ -39,7 +40,10 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=64)),
                 ('value', models.CharField(blank=True, max_length=1024)),
-                ('store', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='store.Store')),
+                ('store', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='properties', to='store.Store')),
             ],
+            options={
+                'abstract': False,
+            },
         ),
     ]

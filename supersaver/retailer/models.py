@@ -2,6 +2,7 @@ from django.db import models
 from supersaver.constants import *
 from country.models import Country
 from source.models import DataSource
+from common.property import Property
 
 
 class Retailer (models.Model):
@@ -23,10 +24,11 @@ class Retailer (models.Model):
                     self.site, self.logo_url, self.country_id, self.datasource_id)
 
 
-class RetailerProperty (models.Model):
-    name = models.CharField(max_length=64, null=False, blank=False)
-    value = models.CharField(max_length=1024, null=False, blank=True)
-    retailer = models.ForeignKey(Retailer, on_delete=models.CASCADE, null=False)
+class RetailerProperty (Property):
+    """
+    Retailer property bag.
+    """
+    retailer = models.ForeignKey(Retailer, on_delete=models.CASCADE, null=False, related_name='properties')
 
     def __repr__(self):
         return 'RetailerProperty: id={0}, retailer={1}, name={2}, value={3}'.format(

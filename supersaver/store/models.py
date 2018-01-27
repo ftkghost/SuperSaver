@@ -2,6 +2,7 @@ from django.db import models
 
 from region.models import Region
 from retailer.models import Retailer
+from common.property import Property
 
 
 class Store(models.Model):
@@ -10,7 +11,8 @@ class Store(models.Model):
     """
     retailer = models.ForeignKey(Retailer, on_delete=models.PROTECT, null=False, related_name='stores')
     region = models.ForeignKey(Region, on_delete=models.PROTECT, null=False, related_name='stores')
-    name = models.CharField(max_length=256, null=False, blank=False)
+    name = models.CharField(max_length=256, null=False, blank=False, db_index=True)
+    display_name = models.CharField(max_length=256, null=False, blank=False)
     tel = models.CharField(max_length=32, null=True, blank=False)
     address = models.CharField(max_length=512, null=True, blank=False)
     working_time = models.CharField(max_length=512, null=True, blank=False)
@@ -25,6 +27,14 @@ class Store(models.Model):
     def save(self, **kwargs):
         self.name = self.name.lower()
         super().save(**kwargs)
+
+    def value_equals_to(self, other):
+        if other is not Store:
+            return False
+        return self.name == other.name \
+            and self.longitude == other.longitude \
+            and self.latitude == other.latitude \
+            and self.address == other.address
 
     def __repr__(self):
         return "Store: id={0}, " \
@@ -42,10 +52,11 @@ class Store(models.Model):
                                                  self.address, self.active)
 
 
-class StoreProperty (models.Model):
-    name = models.CharField(max_length=64, null=False, blank=False)
-    value = models.CharField(max_length=1024, null=False, blank=True)
-    store = models.ForeignKey(Store, on_delete=models.CASCADE, null=False)
+class StoreProperty (Property):
+    """
+    Store property bag.
+    """
+    store = models.ForeignKey(Store, on_delete=models.CASCADE, null=False, related_name='properties')
 
     def __repr__(self):
         return 'StoreProperty: id={0}, store={1}, name={2}, value={3}'.format(

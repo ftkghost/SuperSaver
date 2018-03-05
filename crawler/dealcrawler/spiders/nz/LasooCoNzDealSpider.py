@@ -52,15 +52,15 @@ class LasooCoNzDealSpider(BaseSpider):
     RETAILER_LIST_URL_REFERER = 'https://www.lasoo.co.nz/retailers.html'
     # 1. Filter parameter is single capital character 'ABCD...XYZ' or 0(zero)
     # 2. xpath:  //div[@class="ajax_loader"]//ul[contains(@class, "list")/li
-#     <li>
-#     <span id="13522443117335" class="icon_favourite cb_popupAlert" onclick="submitAddFavouriteRetailer2(this, 13522443117335);return false;"></span>
-#
-#     <a id="retailerid_13522443117335" title="All Power" href="/retailer/all-power.html" class="onclick_href_tracking" data="{&quot;placement&quot;:&quot;retailers&quot;,&quot;object&quot;:&quot;retailer&quot;,&quot;objectid&quot;:&quot;13522443117335&quot;,&quot;interaction&quot;:&quot;RetailerSelectRequest&quot;}">All Power
-#     </a>
-#     <div class="tooltip">
-#     <div class="tooltip_inner">Add to <br> My Favourites</div>
-# </div>
-# </li>
+    # <li>
+    #     <span id="13522443117335" class="icon_favourite cb_popupAlert" onclick="submitAddFavouriteRetailer2(this, 13522443117335);return false;"></span>
+    #
+    #     <a id="retailerid_13522443117335" title="All Power" href="/retailer/all-power.html" class="onclick_href_tracking" data="{&quot;placement&quot;:&quot;retailers&quot;,&quot;object&quot;:&quot;retailer&quot;,&quot;objectid&quot;:&quot;13522443117335&quot;,&quot;interaction&quot;:&quot;RetailerSelectRequest&quot;}">All Power
+    #     </a>
+    #     <div class="tooltip">
+    #         <div class="tooltip_inner">Add to <br> My Favourites</div>
+    #     </div>
+    # </li>
     # 3. Retailer website link and logo may be found from retailer landing page:
     #    https://www.lasoo.co.nz/retailer/{retailer_name}.html
     # 4. Get store location (Some retailer may not have store)

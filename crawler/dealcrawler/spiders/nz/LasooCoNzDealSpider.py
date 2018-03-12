@@ -49,45 +49,6 @@ class LasooCoNzDealSpider(BaseSpider):
                                 '&catalogueid={0}&allpages=1&jsonp={1}'
     OFFER_DETAILS_URL_FORMAT = 'https://www.lasoo.co.nz/data.js?type=offer&id={0}&jsonp={1}'
 
-    RETAILER_LIST_URL_REFERER = 'https://www.lasoo.co.nz/retailers.html'
-
-    NAME_INITIAL_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0"
-
-    # 1. Filter parameter is single capital character 'ABCD...XYZ' or 0(zero)
-    # 2. xpath:  //div[@class="ajax_loader"]//ul[contains(@class, "list")/li
-    # <li>
-    #     <span id="13522443117335" class="icon_favourite cb_popupAlert" onclick="submitAddFavouriteRetailer2(this, 13522443117335);return false;"></span>
-    #
-    #     <a id="retailerid_13522443117335" title="All Power" href="/retailer/all-power.html" class="onclick_href_tracking" data="{&quot;placement&quot;:&quot;retailers&quot;,&quot;object&quot;:&quot;retailer&quot;,&quot;objectid&quot;:&quot;13522443117335&quot;,&quot;interaction&quot;:&quot;RetailerSelectRequest&quot;}">All Power
-    #     </a>
-    #     <div class="tooltip">
-    #         <div class="tooltip_inner">Add to <br> My Favourites</div>
-    #     </div>
-    # </li>
-    # 3. Retailer website link and logo may be found from retailer landing page:
-    #    https://www.lasoo.co.nz/retailer/{retailer_name}.html
-    # 3.x Store lists
-    #    https://www.lasoo.co.nz/storelocator.html?pid=findstores%28top%29
-    # 4. Get store location (Some retailer may not have store)
-    #    https://www.lasoo.co.nz/storelocator/{retailer_name}/location/{region}.html
-    # 5. Parse store name, id, address, open hours
-    # //div[class='storemap-info']/div/h2/
-    # <h2 class="element_left onload_tracking" data="{&quot;placement&quot;:&quot;Store Details&quot;,&quot;object&quot;:&quot;store&quot;,&quot;objectid&quot;:&quot;14565330054621&quot;,&quot;interaction&quot;:&quot;&quot;}">The Warehouse -- South City</h2>
-    #
-    # Opening hours:
-    # //div[class="store_hour"]/div/table/tbody/tr
-    #
-    # Other stores:
-    # //div[class="additional_stores"]/div/table/tbody/tr
-    #
-    # https://www.jbhifi.co.nz/Stores/Store-Finder/
-    # //ul[id='stores']/li/div//ul/li
-    # <li ng-repeat="Store in State.Stores" id="14" data-lat="-36.728873" data-long="174.711721" data-phone="09 968 6967" data-adr="219 Don McKinnon Drive, Albany, 0632 NORTH ISLAND" data-today="9:00a.m. - 6:00p.m." data-tomorrow="9:00a.m. - 6:00p.m." class="ng-scope">
-    #   <a data-bind="storeLink: $data, text: StoreName" href="/Stores/../Stores/Store-Finder/Store-List/north-island/albany/" title="Albany" class="ng-binding">Albany</a>
-    # </li>
-
-    RETAILER_LIST_URL_FORMAT = 'https://www.lasoo.co.nz/retailers.html?filter={0}&requestType=ajax'
-
     def __init__(self, *args, **kwargs):
         super().__init__(
             DATASOURCE_ID_LASOO_CO_NZ,

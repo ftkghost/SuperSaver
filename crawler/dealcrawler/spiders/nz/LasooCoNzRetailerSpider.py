@@ -109,13 +109,15 @@ class LasooCoNzRetailerSpider(BaseSpider):
         elem = first_elem_with_xpath(response, '//div[@class="container"]//div[@class="banner"]//div[@class="content"]')
         retailer = response.meta["retailer"]
         retailer['logo_url'] = extract_first_value_with_xpath(elem, "img/@src")
-        website = extract_first_value_with_xpath(elem, 'a[contains(@class, "lzbtn")]/@href')
-        if not website:
-            if website.startswith('http'):
-                # External website
-                retailer['website'] = website
-            elif website != '#':
-                retailer['website'] = response.urljoin(website)
+        website_text = extract_first_value_with_xpath(elem, 'a/span/text()')
+        if "View Website" == website_text:
+            website = extract_first_value_with_xpath(elem, 'a[contains(@class, "lzbtn")]/@href')
+            if not website:
+                if website.startswith('http'):
+                    # External website
+                    retailer['website'] = website
+                elif website != '#':
+                    retailer['website'] = response.urljoin(website)
         return retailer
 
     @classmethod

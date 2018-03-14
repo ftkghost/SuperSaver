@@ -4,14 +4,14 @@ import traceback
 from datetime import datetime, timedelta
 
 from dealcrawler.model.items import ProductItem
-from dealcrawler.spiders.BaseSpider import BaseSpider
+from dealcrawler.spiders.BaseSpider import DealSpider
 from dealcrawler.util import *
 from retailer.models import Retailer
 from supersaver.constants import DATASOURCE_ID_1_DAY_CO_NZ
 from supersaver.constants import RETAILER_NAME_1_DAY_CO_NZ
 
 
-class OneDayCoNzSpider(BaseSpider):
+class OneDayCoNzSpider(DealSpider):
     """
     Crawl deals from 1-day.co.nz
     Scrapy reports error when trying to download subsequence pages with https, should update scrapy.http.cookies

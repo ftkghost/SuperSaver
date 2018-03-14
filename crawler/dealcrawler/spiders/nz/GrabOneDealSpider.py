@@ -9,7 +9,7 @@ from json import loads as json_loads
 from dateutil.parser import parse as parse_date
 
 from dealcrawler.model.items import ProductItem
-from dealcrawler.spiders.BaseSpider import BaseSpider
+from dealcrawler.spiders.BaseSpider import DealSpider
 from dealcrawler.util import *
 from product.models import ProductProperty
 from store.models import Store
@@ -17,7 +17,7 @@ from supersaver.constants import *
 from supersaver.settings import make_internal_property_name
 
 
-class GrabOneDealSpider(BaseSpider):
+class GrabOneDealSpider(DealSpider):
     name = 'grabone.co.nz'
 
     custom_settings = {

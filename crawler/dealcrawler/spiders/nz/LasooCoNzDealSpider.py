@@ -1,32 +1,26 @@
 __author__ = 'qinpeng'
 
 import logging
-from json import loads as json_loads
-from urllib import parse as urlparse
-from datetime import datetime, timedelta
-from dateutil import parser as dateparser
 import random
+from datetime import datetime, timedelta
+from json import loads as json_loads
 
 import scrapy
-from supersaver.settings import make_internal_property_name
+from dateutil import parser as dateparser
 
-from dealcrawler.spiders.BaseSpider import BaseSpider
-from retailer.models import Retailer, RetailerProperty
-from category.models import Category
-from store.models import Store
-from region.models import Region
-from product.models import Product, ProductImage
-from supersaver.constants import *
-from product.models import ProductProperty
-
+from dealcrawler.model.items import ProductItem
+from dealcrawler.spiders.BaseSpider import DealSpider
 from dealcrawler.util import *
-from dealcrawler.model.items import ProductItem, StoreItem, RegionItem
-
+from product.models import ProductProperty
+from retailer.models import RetailerProperty
+from store.models import Store
+from supersaver.constants import *
+from supersaver.settings import make_internal_property_name
 
 UTC_TO_NZ_TIMEZONE_DELTA = timedelta(seconds=12*3600)
 
 
-class LasooCoNzDealSpider(BaseSpider):
+class LasooCoNzDealSpider(DealSpider):
 
     """
     Crawl deals from lasoo.co.nz

@@ -117,7 +117,7 @@ class LasooCoNzDealSpider(DealSpider):
         prop.value = retailer_json['code']
         properties.append(prop)
 
-        return self._create_or_update_retailer_in_db(retailer_json['name'], retailer_json['smallImage'], properties)
+        return self._create_or_update_retailer_in_db(retailer_json['name'], None, retailer_json['smallImage'], properties)
 
     def parse_deals_from_response(self, response):
         retailer = response.meta['retailer']
@@ -209,7 +209,7 @@ class LasooCoNzDealSpider(DealSpider):
             s.display_name = name
             s.latitude = l['latitude']
             s.longitude = l['longitude']
-
+        # TODO:
         # [
         #     {id:14540226467431,latitude:-36.9424592,longitude:174.7867304,displayName:"FreshChoice -- Mangere Bridge'"}
         #     ,
@@ -217,6 +217,7 @@ class LasooCoNzDealSpider(DealSpider):
         #     ,
         #     {id:14540226467325,latitude:-36.8809,longitude:174.8966,displayName:"FreshChoice -- Half Moon Bay'"}
         # ]
+
 
     @classmethod
     def _get_random_jsonp_tag(cls):

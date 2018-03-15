@@ -106,11 +106,10 @@ class DealSpider (BaseSpider):
             promotion_end_date__gt=now)
         self.prod_repo = ProductRepository(products)
 
-        retailers = self.datasource.retailers.all()
-        self.retailer_repo = RetailerRepository(retailers)
+        self.retailer_repo = RetailerRepository(self.datasource, self.country)
 
     def _create_or_update_prod_in_db(self, prod_item, prod_image_url, stores, properties=None):
         self.prod_repo.add_or_update_prod_in_db(prod_item, prod_image_url, stores, properties)
 
-    def _create_or_update_retailer_in_db(self, retailer_name, logo_url=None, properties=None):
-        self.retailer_repo.add_or_update_retailer_in_db(retailer_name, logo_url, properties)
+    def _create_or_update_retailer_in_db(self, retailer_name, website=None, logo_url=None, properties=None):
+        self.retailer_repo.add_or_update_retailer_in_db(retailer_name, website, logo_url, properties)

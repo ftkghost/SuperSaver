@@ -6,12 +6,18 @@ from retailer.models import Retailer
 
 class RetailerRepository (Repository):
 
-    def __init__(self, datasource, country, retailers):
-        super().__init__(retailers, lambda r: r.r.name)
+    def __init__(self, datasource, country):
         self.datasource = datasource
         self.country = country
+        retailers = datasource.retailers.all()
+        super().__init__(retailers, lambda r: r.name)
 
-    def add_or_update_retailer_in_db(self, retailer_name, logo_url=None, properties=None):
+    def get_retailer_by_name(self, name):
+        if not name:
+            return None
+        return self.get_item(name.lower())
+
+    def add_or_update_retailer_in_db(self, retailer_name, website=None, logo_url=None, properties=None):
         """
         Create or update retailer in database and update repository memory store.
 
@@ -20,10 +26,11 @@ class RetailerRepository (Repository):
         :param properties:
         :return:
         """
-        retailer = self.get_item(retailer_name)
+        normalized_retailer_name = retailer_name.lower()
+        retailer = self.get_item(normalized_retailer_name)
         if retailer is None:
             retailer = Retailer()
-            retailer.name = retailer_name.lower()
+            retailer.name = normalized_retailer_name
             retailer.display_name = retailer_name
             retailer.logo_url = logo_url
             retailer.datasource = self.datasource

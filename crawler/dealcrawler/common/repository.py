@@ -21,8 +21,6 @@ class Repository:
         with self.item_access_lock:
             self.item_dict[self.key_func(item)] = item
 
-        self._safe_add_or_update_item(self.item_dict, item, self.key_func)
-
     # Thread safe operation
     def get_item(self, key):
         """

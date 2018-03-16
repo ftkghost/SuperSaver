@@ -19,9 +19,12 @@ from region.models import Region
 from product.models import Product, ProductImage
 from supersaver.constants import *
 from product.models import ProductProperty
+from country.models import Country
+from source.models import DataSource
 
 from dealcrawler.util import *
 from dealcrawler.model.items import ProductItem, StoreItem, RegionItem
+from ..data.retailer_repository import RetailerRepository
 
 
 UTC_TO_NZ_TIMEZONE_DELTA = timedelta(seconds=12*3600)
@@ -77,11 +80,14 @@ class LasooCoNzRetailerSpider(BaseSpider):
             # Ajax requests on website to get retailer list
             start_urls.append(self.__class__.RETAILER_LIST_URL_FORMAT.format(ch))
         super().__init__(
-            DATASOURCE_ID_LASOO_CO_NZ,
-            'NZ',
             start_urls,
             self.__class__.REQUEST_HOST,
             *args, **kwargs)
+
+        self.datasource = DataSource.objects.get(id=DATASOURCE_ID_LASOO_CO_NZ)
+        self.country = Country.objects.get(country_code='NZ')
+
+        self.retailer_repo = RetailerRepository(self.datasource, self.country)
         random.seed(datetime.now().timestamp())
 
     # TODO: Parse retailer list and store list first with higher request priority
@@ -95,7 +101,7 @@ class LasooCoNzRetailerSpider(BaseSpider):
 
             retailer_data = {
                 'id': retailer_id,
-                'display_name': display_name,
+                'name': display_name,
                 'lasoo_url': retailer_detail_url,
             }
             meta = {
@@ -108,18 +114,143 @@ class LasooCoNzRetailerSpider(BaseSpider):
 
     def parse_retailer_details_from_response(self, response):
         elem = first_elem_with_xpath(response, '//div[@class="container"]//div[@class="banner"]//div[@class="content"]')
+        data = response.meta["retailer"]
+        logo_url = extract_first_value_with_xpath(elem, "img/@src")
+
+        website = None
+        store_list_url = None
+        anchors = elem.xpath('a')
+        for anchor_elem in anchors:
+            text = extract_first_value_with_xpath(anchor_elem, 'span/text()')
+            href = extract_first_value_with_xpath(anchor_elem, '@href')
+            if "View Website" == text:
+                if href:
+                    if href.startswith('http'):
+                        # External website
+                        website = href
+                    elif website != '#':
+                        website = response.urljoin(href)
+            elif href and href.startswith("/storelocator"):
+                store_list_url = response.urljoin(href)
+        props = []
+        prop = RetailerProperty()
+        prop.name = make_internal_property_name("lasoo_id")
+        prop.value = data['id']
+        props.append(prop)
+
+        prop = RetailerProperty()
+        prop.name = make_internal_property_name("lasoo_url")
+        prop.value = data['lasoo_url']
+        props.append(prop)
+        retailer = self.retailer_repo.add_or_update_retailer_in_db(data['name'], website, logo_url, props)
+
+        if store_list_url:
+            meta = {
+                "retailer": retailer
+            }
+            return scrapy.Request(store_list_url,
+                                  callback=self.parse_stores_from_response,
+                                  headers=self.__class__._get_http_headers(response.url),
+                                  meta=meta)
+        else:
+            return None
+
+    def parse_stores_from_response(self, response):
         retailer = response.meta["retailer"]
-        retailer['logo_url'] = extract_first_value_with_xpath(elem, "img/@src")
-        website_text = extract_first_value_with_xpath(elem, 'a/span/text()')
-        if "View Website" == website_text:
-            website = extract_first_value_with_xpath(elem, 'a[contains(@class, "lzbtn")]/@href')
-            if not website:
-                if website.startswith('http'):
-                    # External website
-                    retailer['website'] = website
-                elif website != '#':
-                    retailer['website'] = response.urljoin(website)
-        return retailer
+        script_elems = response.xpath("//section[contains(@class, 'store_listing')]/div/script/text()")
+        stores_by_id = {}
+        for elem in script_elems:
+            script_text = elem.extract()
+            idx = script_text.find("showOfferDetailNearStoreMap")
+            if idx >= 0:
+                store_json = substr_surrounded_by_chars(script_text, ('[', ']'), idx)
+                stores = self.parse_store_list_js_obj_syntax_string(store_json)
+                stores_by_id = {s["id"]: s for s in stores}
+                break
+        store_list_elems = response.xpath(
+            "//section/div/div[contains(@class,'store-listing-table')]//tr[contains(@class,'ctr-storeitem')]")
+        for elem in store_list_elems:
+            # Get store url and address
+            store_id = extract_first_value_with_xpath(elem, "@data-storeid")
+            store = stores_by_id[store_id]
+            store_url = extract_first_value_with_xpath(elem, "@data-url")
+            address = extract_first_value_with_xpath(elem, "td[2]/text()")
+            store["url"] = response.urljoin(store_url)
+            store["address"] = self.__class__.normalize_store_address(address)
+            meta = {
+                "retailer": retailer,
+                "store": store
+            }
+            yield scrapy.Request(response.urljoin(store_url),
+                                 callback=self.parse_store_details_from_response,
+                                 headers=self.__class__._get_http_headers(response.url),
+                                 meta=meta)
+        next_page = extract_first_value_with_xpath(response, "//div[@class='pagination']//a[@class='next']/@href")
+        if not next_page:
+            return None
+        meta = {
+            "retailer": retailer
+        }
+        next_stores_page_url = response.urljoin(next_page)
+        return scrapy.Request(next_stores_page_url,
+                              callback=self.parse_stores_from_response,
+                              headers=self.__class__._get_http_headers(response.url),
+                              meta=meta)
+
+    def parse_store_list_js_obj_syntax_string(self, js_obj_string):
+        # Store list json for google map looks like below:
+        # [
+        #     {id:13524191847234,latitude:-43.55240631,longitude:172.6368103,displayName:"All Power -- Cyclone Cycles &amp; Mowers Ltd'"}
+        #     ,
+        #     {id:13524191847738,latitude:-43.51478577,longitude:172.64381409,displayName:"All Power -- Edgeware Mowers &amp; Chainsaws Ltd'"}
+        #     ,
+        #     ...
+        # ]
+        js_obj_json = js_obj_string.replace("\t", "").replace("\n", "").replace("\r", "").replace('\'"', '"')
+        if js_obj_json.find("\"id\"") > 0:
+            store_list = json_loads(js_obj_json)
+        else:
+            # store list is in valid js syntax sugar string, not a valid json.
+            items = js_obj_json.split('},')
+            store_list = []
+            for item in items:
+                fields_str = item.strip('[{],')
+                if len(fields_str) == 0:
+                    continue
+                # We only need first 4 fields
+                fields = fields_str.split(',', 4)
+                if len(fields) < 4:
+                    self.log_debug("Invalid store js string {0}", fields_str)
+                    continue
+                id_and_value = fields[0].split(':')
+                latitude_and_value = fields[1].split(':')
+                longitude_and_value = fields[2].split(':')
+                display_name_and_value = fields[3].split(':', 2)
+                store = {
+                    id_and_value[0]: id_and_value[1],
+                    latitude_and_value[0]: float(latitude_and_value[1]),
+                    longitude_and_value[0]: float(longitude_and_value[1]),
+                    display_name_and_value[0]: display_name_and_value[1]
+                }
+                store_list.append(store)
+        for store in store_list:
+            # Normalise field values
+            store['id'] = str(store['id'])
+            store['displayName'] = self.__class__.normalize_store_display_name(store['displayName'])
+        return store_list
+
+    def parse_store_details_from_response(self, response):
+        # TODO:
+        # Save and update store lists
+        pass
+
+    @staticmethod
+    def normalize_store_display_name(raw_name):
+        return raw_name.replace(' -- ', ' - ').strip("'\"")
+
+    @staticmethod
+    def normalize_store_address(raw_address):
+        return raw_address.replace("\t", "").replace("\r", "").replace("\n", "")
 
     @classmethod
     def _get_http_headers(cls, referer):

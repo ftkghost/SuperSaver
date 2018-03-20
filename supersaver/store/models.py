@@ -15,7 +15,7 @@ class Store(models.Model):
     display_name = models.CharField(max_length=256, null=False, blank=False)
     tel = models.CharField(max_length=32, null=True, blank=False)
     address = models.CharField(max_length=512, null=True, blank=False)
-    working_time = models.CharField(max_length=512, null=True, blank=False)
+    working_hours = models.CharField(max_length=512, null=True, blank=False)
     website = models.CharField(max_length=512, null=True, blank=False)
     email = models.CharField(max_length=128, null=True, blank=False)
     longitude = models.FloatField(null=True)

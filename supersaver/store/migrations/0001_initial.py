@@ -22,7 +22,7 @@ class Migration(migrations.Migration):
                 ('display_name', models.CharField(max_length=256)),
                 ('tel', models.CharField(max_length=32, null=True)),
                 ('address', models.CharField(max_length=512, null=True)),
-                ('working_time', models.CharField(max_length=512, null=True)),
+                ('working_hours', models.CharField(max_length=512, null=True)),
                 ('website', models.CharField(max_length=512, null=True)),
                 ('email', models.CharField(max_length=128, null=True)),
                 ('longitude', models.FloatField(null=True)),

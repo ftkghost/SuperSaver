@@ -270,7 +270,7 @@ class GrabOneDealSpider(DealSpider):
         store.address = address
         store.website = website
         store.tel = tel
-        store.working_time = location['public_opening_hours']
+        store.working_hours = location['public_opening_hours']
         store.save()
         return store
 

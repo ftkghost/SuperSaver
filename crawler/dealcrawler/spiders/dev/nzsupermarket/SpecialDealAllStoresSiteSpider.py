@@ -104,7 +104,7 @@ class SpecialDealAllStoresSiteSpider(scrapy.Spider):
             lat = store.extract_first_value_with_xpath('./lat/text()', func=float)
             lng = store.extract_first_value_with_xpath('./lng/text()', func=float)
             tel = store.extract_first_value_with_xpath('./phone/text()')
-            working_time = store.extract_first_value_with_xpath("./*[@name='Open']/text()")
+            working_hours = store.extract_first_value_with_xpath("./*[@name='Open']/text()")
             if region is None:
                 self.log("Can't find region by name {0} for store {1}.".format(region_name, name))
             item = StoreItem()
@@ -114,7 +114,7 @@ class SpecialDealAllStoresSiteSpider(scrapy.Spider):
             item['latitude'] = lat
             item['longitude'] = lng
             item['tel'] = tel
-            item['working_time'] = working_time
+            item['working_hours'] = working_hours
             item['provider_store_id'] = None
             item['active'] = True
             item['retailer'] = self.retailer
@@ -127,7 +127,7 @@ class SpecialDealAllStoresSiteSpider(scrapy.Spider):
                 store.longitude = lng
                 store.address = address
                 store.tel = tel
-                store.working_time = working_time
+                store.working_hours = working_hours
                 store.active = True
                 store.save()
             else:

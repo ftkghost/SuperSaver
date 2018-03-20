@@ -24,7 +24,7 @@ def init_data(apps, schema_editor):
             address='152 Collins Road, Hamilton 3206, New Zealand',
             website=None,
             email=None,
-            working_time='09:00 - 18:00 Monday-Thursday\n09:00 - 17:00 Friday',
+            working_hours='Monday-Thursday 09:00 - 18:00\nFriday 09:00 - 17:00',
             longitude=175.268416,
             latitude=-37.820279,
             active=True),

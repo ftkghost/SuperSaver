@@ -41,7 +41,7 @@ class LasooCoNzRetailerSpider(BaseSpider):
 
     # Filter parameter is single capital character 'ABCD...XYZ' or 0(zero)
     RETAILER_LIST_URL_FORMAT = 'https://www.lasoo.co.nz/retailers.html?filter={0}&requestType=ajax'
-    NAME_INITIAL_CHARS = "C" #"ABCDEFGHIJKLMNOPQRSTUVWXYZ0"
+    NAME_INITIAL_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0"
 
     # 1. Browser retailer list with initial character.
     #    Filter parameter is single capital character 'ABCD...XYZ' or 0(zero)

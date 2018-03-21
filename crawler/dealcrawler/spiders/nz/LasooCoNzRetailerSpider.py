@@ -31,7 +31,6 @@ class LasooCoNzRetailerSpider(BaseSpider):
     'Chrome/48.0.2564.97 Safari/537.36',
     custom_settings = {
         'ROBOTSTXT_OBEY': False,
-
     }
 
     ORIGIN_URL = 'https://www.lasoo.co.nz/retailers.html'
@@ -78,7 +77,6 @@ class LasooCoNzRetailerSpider(BaseSpider):
         for url in self.start_urls:
             yield self.create_request(url, self.parse, referer=self.__class__.INITIAL_REFERER_URL, dont_filter=True)
 
-    # TODO: Parse retailer list and store list first with higher request priority
     def parse(self, response):
         for retailer_li in response.xpath('//div[@class="tab-pane"]/ul/li'):
             data = extract_first_value_with_xpath(retailer_li, "a/@data")
@@ -111,7 +109,7 @@ class LasooCoNzRetailerSpider(BaseSpider):
         for anchor_elem in anchors:
             text = extract_first_value_with_xpath(anchor_elem, 'span/text()')
             href = extract_first_value_with_xpath(anchor_elem, '@href')
-            if "View Website" == text:
+            if text and "view website" == text.lower():
                 if href:
                     if href.startswith('http'):
                         # External website
@@ -191,9 +189,11 @@ class LasooCoNzRetailerSpider(BaseSpider):
     def parse_store_list_js_obj_syntax_string(self, js_obj_string):
         # Store list json for google map looks like below:
         # [
-        #     {id:13524191847234,latitude:-43.55240631,longitude:172.6368103,displayName:"All Power -- Cyclone Cycles &amp; Mowers Ltd'"}
+        #     {id:13524191847234,latitude:-43.55240631,longitude:172.6368103,
+        #       displayName:"All Power -- Cyclone Cycles &amp; Mowers Ltd'"}
         #     ,
-        #     {id:13524191847738,latitude:-43.51478577,longitude:172.64381409,displayName:"All Power -- Edgeware Mowers &amp; Chainsaws Ltd'"}
+        #     {id:13524191847738,latitude:-43.51478577,longitude:172.64381409,
+        #       displayName:"All Power -- Edgeware Mowers &amp; Chainsaws Ltd'"}
         #     ,
         #     ...
         # ]

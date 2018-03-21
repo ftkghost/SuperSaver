@@ -32,6 +32,7 @@ class RetailerRepository (Repository):
             retailer = Retailer()
         retailer.name = normalized_retailer_name
         retailer.display_name = retailer_name
+        retailer.site = website
         retailer.logo_url = logo_url
         retailer.datasource = self.datasource
         retailer.country = self.country

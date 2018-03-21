@@ -1,31 +1,22 @@
 # -*- coding: utf-8 -*-
 __author__ = 'qinpeng'
 
-import logging
-from json import loads as json_loads
-from urllib import parse as urlparse
-from datetime import datetime, timedelta
-from dateutil import parser as dateparser
 import random
+from datetime import datetime, timedelta
+from json import loads as json_loads
 
 import scrapy
-from supersaver.settings import make_internal_property_name
 
-from dealcrawler.spiders.BaseSpider import BaseSpider
-from retailer.models import Retailer, RetailerProperty
-from category.models import Category
-from store.models import Store
-from region.models import Region
-from product.models import Product, ProductImage
-from supersaver.constants import *
-from product.models import ProductProperty
 from country.models import Country
-from source.models import DataSource
-
+from dealcrawler.spiders.BaseSpider import BaseSpider
 from dealcrawler.util import *
-from dealcrawler.model.items import ProductItem, StoreItem, RegionItem
+from region.models import Region
+from retailer.models import RetailerProperty
+from source.models import DataSource
+from store.models import Store, StoreProperty
+from supersaver.constants import *
+from supersaver.settings import make_internal_property_name
 from ..data.retailer_repository import RetailerRepository
-
 
 UTC_TO_NZ_TIMEZONE_DELTA = timedelta(seconds=12*3600)
 
@@ -44,35 +35,25 @@ class LasooCoNzRetailerSpider(BaseSpider):
     }
 
     ORIGIN_URL = 'https://www.lasoo.co.nz/retailers.html'
+    INITIAL_REFERER_URL = 'https://www.lasoo.co.nz/retailers.html'
 
     REQUEST_HOST = 'www.lasoo.co.nz'
 
     # Filter parameter is single capital character 'ABCD...XYZ' or 0(zero)
     RETAILER_LIST_URL_FORMAT = 'https://www.lasoo.co.nz/retailers.html?filter={0}&requestType=ajax'
-    NAME_INITIAL_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0"
+    NAME_INITIAL_CHARS = "C" #"ABCDEFGHIJKLMNOPQRSTUVWXYZ0"
 
-    # 1. Filter parameter is single capital character 'ABCD...XYZ' or 0(zero)
-    # 2. Retailer website link and logo may be found from retailer landing page:
+    # 1. Browser retailer list with initial character.
+    #    Filter parameter is single capital character 'ABCD...XYZ' or 0(zero)
+    # 2. Crawler retailer landing page.
+    #    Retailer website link and logo may be found from retailer landing page:
     #    https://www.lasoo.co.nz/retailer/{retailer_name}.html
-    # 3 Store lists
+    # 3. Extract store lists link from retailer landing page, and get list of stores with pagination.
     #    https://www.lasoo.co.nz/storelocator.html?pid=findstores%28top%29
+    #    You can get store lasoo id, name, geo location here.
     # 4. Get store location (Some retailer may not have store)
     #    https://www.lasoo.co.nz/storelocator/{retailer_name}/location/{region}.html
-    # 5. Parse store name, id, address, open hours
-    # //div[class='storemap-info']/div/h2/
-    # <h2 class="element_left onload_tracking" data="{&quot;placement&quot;:&quot;Store Details&quot;,&quot;object&quot;:&quot;store&quot;,&quot;objectid&quot;:&quot;14565330054621&quot;,&quot;interaction&quot;:&quot;&quot;}">The Warehouse -- South City</h2>
-    #
-    # Opening hours:
-    # //div[class="store_hour"]/div/table/tbody/tr
-    #
-    # Other stores:
-    # //div[class="additional_stores"]/div/table/tbody/tr
-    #
-    # https://www.jbhifi.co.nz/Stores/Store-Finder/
-    # //ul[id='stores']/li/div//ul/li
-    # <li ng-repeat="Store in State.Stores" id="14" data-lat="-36.728873" data-long="174.711721" data-phone="09 968 6967" data-adr="219 Don McKinnon Drive, Albany, 0632 NORTH ISLAND" data-today="9:00a.m. - 6:00p.m." data-tomorrow="9:00a.m. - 6:00p.m." class="ng-scope">
-    #   <a data-bind="storeLink: $data, text: StoreName" href="/Stores/../Stores/Store-Finder/Store-List/north-island/albany/" title="Albany" class="ng-binding">Albany</a>
-    # </li>
+    # 5. Parse store name, id, address, open hours, phone number, fax
 
     def __init__(self, *args, **kwargs):
         start_urls = []
@@ -89,6 +70,13 @@ class LasooCoNzRetailerSpider(BaseSpider):
 
         self.retailer_repo = RetailerRepository(self.datasource, self.country)
         random.seed(datetime.now().timestamp())
+
+        # TODO: Identify proper region for retailer stores
+        self.region = Region.objects.get(name="all new zealand")
+
+    def start_requests(self):
+        for url in self.start_urls:
+            yield self.create_request(url, self.parse, referer=self.__class__.INITIAL_REFERER_URL, dont_filter=True)
 
     # TODO: Parse retailer list and store list first with higher request priority
     def parse(self, response):
@@ -109,7 +97,7 @@ class LasooCoNzRetailerSpider(BaseSpider):
             }
             yield scrapy.Request(retailer_detail_url,
                                  callback=self.parse_retailer_details_from_response,
-                                 headers=self.__class__._get_http_headers(response.url),
+                                 headers=self.__class__._get_http_headers(self.__class__.INITIAL_REFERER_URL),
                                  meta=meta)
 
     def parse_retailer_details_from_response(self, response):
@@ -165,7 +153,7 @@ class LasooCoNzRetailerSpider(BaseSpider):
             if idx >= 0:
                 store_json = substr_surrounded_by_chars(script_text, ('[', ']'), idx)
                 stores = self.parse_store_list_js_obj_syntax_string(store_json)
-                stores_by_id = {s["id"]: s for s in stores}
+                stores_by_id = {s['lasoo_id']: s for s in stores}
                 break
         store_list_elems = response.xpath(
             "//section/div/div[contains(@class,'store-listing-table')]//tr[contains(@class,'ctr-storeitem')]")
@@ -175,8 +163,9 @@ class LasooCoNzRetailerSpider(BaseSpider):
             store = stores_by_id[store_id]
             store_url = extract_first_value_with_xpath(elem, "@data-url")
             address = extract_first_value_with_xpath(elem, "td[2]/text()")
-            store["url"] = response.urljoin(store_url)
-            store["address"] = self.__class__.normalize_store_address(address)
+
+            store['lasoo_url'] = response.urljoin(store_url)
+            store['address'] = self.__class__.normalize_store_address(address)
             meta = {
                 "retailer": retailer,
                 "store": store
@@ -185,12 +174,14 @@ class LasooCoNzRetailerSpider(BaseSpider):
                                  callback=self.parse_store_details_from_response,
                                  headers=self.__class__._get_http_headers(response.url),
                                  meta=meta)
+        # Is there pagination button? If so, we can get more stores.
         next_page = extract_first_value_with_xpath(response, "//div[@class='pagination']//a[@class='next']/@href")
         if not next_page:
             return None
         meta = {
             "retailer": retailer
         }
+        # Crawl stores in next page
         next_stores_page_url = response.urljoin(next_page)
         return scrapy.Request(next_stores_page_url,
                               callback=self.parse_stores_from_response,
@@ -233,16 +224,116 @@ class LasooCoNzRetailerSpider(BaseSpider):
                     display_name_and_value[0]: display_name_and_value[1]
                 }
                 store_list.append(store)
+        store_items = []
         for store in store_list:
-            # Normalise field values
-            store['id'] = str(store['id'])
-            store['displayName'] = self.__class__.normalize_store_display_name(store['displayName'])
-        return store_list
+            # Normalise field name and value
+            item = {}
+            item['lasoo_id'] = str(store['id'])
+            item['display_name'] = self.__class__.normalize_store_display_name(store['displayName'])
+            item['name'] = item['display_name'].lower()
+            item['latitude'] = store['latitude']
+            item['longitude'] = store['longitude']
+            store_items.append(item)
+        return store_items
 
     def parse_store_details_from_response(self, response):
-        # TODO:
-        # Save and update store lists
-        pass
+        retailer = response.meta['retailer']
+        store = response.meta['store']
+        values = response.xpath(
+            '//div[@class="storemap-holder"]/div[@class="storemap-info"]/div/strong/text()').extract()
+        for v in values:
+            if v.lower().startswith('ph:'):
+                normalised_tel = v[3:].strip().replace(' ', '')
+                store['tel'] = normalised_tel
+                break
+        working_hours_node = first_elem_with_xpath(response, '//section//div[@class="store_hour"]/div[@class="content"]')
+        working_hours = self.__class__.extract_working_hours(working_hours_node)
+        if working_hours:
+            store['working_hours'] = working_hours
+        # Save and update store and its properties in database
+        self.add_or_update_store_in_db(store, retailer)
+        return None
+
+    def add_or_update_store_in_db(self, store_dict, retailer):
+        store_name = store_dict['name']
+        results = retailer.stores.filter(name=store_name)
+        if len(results) > 0:
+            # Update existing store
+            store = results[0]
+        else:
+            # Create new store
+            store = Store()
+            store.retailer = retailer
+            store.region = self.region
+            store.name = store_name
+        store.display_name = store_dict["display_name"]
+        store.latitude = None if 'latitude' not in store_dict else store_dict["latitude"]
+        store.longitude = None if 'longitude' not in store_dict else store_dict["longitude"]
+        store.tel = None if 'tel' not in store_dict else store_dict["tel"]
+        store.address = None if 'address' not in store_dict else store_dict["address"]
+        store.working_hours = None if 'working_hours' not in store_dict else store_dict["working_hours"]
+        store.active = True
+        store.save()
+
+        lasoo_id = store_dict['lasoo_id']
+        props = []
+        prop = StoreProperty()
+        prop.name = 'lasoo_id'
+        prop.value = lasoo_id
+        props.append(prop)
+        if 'lasoo_url' in store_dict:
+            lasoo_url = store_dict['lasoo_url']
+            prop = StoreProperty()
+            prop.name = 'lasoo_url'
+            prop.value = lasoo_url
+            props.append(prop)
+        self.__class__._update_store_props_in_db(store, props)
+
+    @staticmethod
+    def _update_store_props_in_db(store, properties):
+        ex_props = list(store.properties.all())
+        for prop in properties:
+            found = None
+            for ex_prop in ex_props:
+                if ex_prop.name == prop.name:
+                    found = ex_prop
+                    break
+            if not found:
+                # Create new props
+                prop.store = store
+                prop.save()
+            else:
+                if found.value != prop.value:
+                    # Update existing props
+                    found.value = prop.value
+                    found.save()
+                # Remove from pending deletion list
+                ex_props.remove(found)
+        for p in ex_props:
+            p.delete()
+
+    @staticmethod
+    def extract_working_hours(html_node):
+        if exists_elem_with_xpath(html_node, '//table[@id="storeHours"]'):
+            # A working hours table
+            working_hours = ""
+            is_header = True
+            for row_node in html_node.xpath('//table[@id="storeHours"]//tr'):
+                if is_header:
+                    is_header = False
+                    continue
+                values = list(extract_values_with_xpath(row_node, 'td/text()'))
+                if len(working_hours) > 0:
+                    working_hours += "\n"
+                working_hours += "{0} {1} - {2}".format(values[0], values[1], values[2])
+            if len(working_hours) > 0:
+                return working_hours
+        else:
+            working_hours = extract_first_value_with_xpath(html_node, 'text()')
+            if working_hours.lower().find("no store hours") < 0:
+                nv = working_hours.strip()
+                return nv
+        return None
 
     @staticmethod
     def normalize_store_display_name(raw_name):

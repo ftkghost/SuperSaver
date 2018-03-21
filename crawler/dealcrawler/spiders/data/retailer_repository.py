@@ -30,13 +30,13 @@ class RetailerRepository (Repository):
         retailer = self.get_item(normalized_retailer_name)
         if retailer is None:
             retailer = Retailer()
-            retailer.name = normalized_retailer_name
-            retailer.display_name = retailer_name
-            retailer.logo_url = logo_url
-            retailer.datasource = self.datasource
-            retailer.country = self.country
-            retailer.save()
-            self.add_or_update_item(retailer)
+        retailer.name = normalized_retailer_name
+        retailer.display_name = retailer_name
+        retailer.logo_url = logo_url
+        retailer.datasource = self.datasource
+        retailer.country = self.country
+        retailer.save()
+        self.add_or_update_item(retailer)
         if properties:
             self.__class__._update_retailer_props_in_db(retailer, properties)
         return retailer
@@ -44,15 +44,23 @@ class RetailerRepository (Repository):
     @staticmethod
     def _update_retailer_props_in_db(retailer, properties):
         ex_props = list(retailer.properties.all())
+
         for prop in properties:
             found = None
             for ex_prop in ex_props:
-                if ex_prop.value_equals_to(prop):
+                if ex_prop.name == prop.name:
                     found = ex_prop
+                    break
             if not found:
+                # Create new props
                 prop.retailer = retailer
                 prop.save()
             else:
+                if found.value != prop.value:
+                    # Update existing props
+                    found.value = prop.value
+                    found.save()
+                # Remove from pending deletion list
                 ex_props.remove(found)
         for p in ex_props:
             p.delete()

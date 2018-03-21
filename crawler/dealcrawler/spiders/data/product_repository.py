@@ -80,12 +80,19 @@ class ProductRepository (Repository):
         for prop in properties:
             found = None
             for ex_prop in ex_props:
-                if ex_prop.value_equals_to(prop):
+                if ex_prop.name == prop.name:
                     found = ex_prop
+                    break
             if not found:
+                # Create new props
                 prop.product = db_prod
                 prop.save()
             else:
+                if found.value != prop.value:
+                    # Update existing props
+                    found.value = prop.value
+                    found.save()
+                # Remove from pending deletion list
                 ex_props.remove(found)
         for p in ex_props:
             p.delete()

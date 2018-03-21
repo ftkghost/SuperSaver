@@ -17,7 +17,6 @@ class Repository:
         :param item: data item.
         :return:
         """
-
         with self.item_access_lock:
             self.item_dict[self.key_func(item)] = item
 

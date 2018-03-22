@@ -63,5 +63,5 @@ class RetailerRepository (Repository):
                     found.save()
                 # Remove from pending deletion list
                 ex_props.remove(found)
-        for p in ex_props:
-            p.delete()
+        # for p in ex_props:
+        #     p.delete()

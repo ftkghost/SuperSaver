@@ -71,8 +71,8 @@ class ProductRepository (Repository):
                 db_prod.stores.add(store)
             else:
                 ex_stores.remove(found)
-        for s in ex_stores:
-            db_prod.stores.remove(s)
+        # for s in ex_stores:
+        #     db_prod.stores.remove(s)
 
     @staticmethod
     def _update_prod_props_in_db(db_prod, properties):
@@ -94,8 +94,8 @@ class ProductRepository (Repository):
                     found.save()
                 # Remove from pending deletion list
                 ex_props.remove(found)
-        for p in ex_props:
-            p.delete()
+        # for p in ex_props:
+        #     p.delete()
 
     @staticmethod
     def _save_product_image(product, image_url):

@@ -13,9 +13,12 @@ class RetailerRepository (Repository):
         super().__init__(retailers, lambda r: r.name)
 
     def get_retailer_by_name(self, name):
-        if not name:
+        return self.get_item(name)
+
+    def get_item(self, key):
+        if not key:
             return None
-        return self.get_item(name.lower())
+        return super().get_item(key.lower())
 
     def add_or_update_retailer_in_db(self, retailer_name, website=None, logo_url=None, properties=None):
         """
@@ -44,8 +47,9 @@ class RetailerRepository (Repository):
 
     @staticmethod
     def _update_retailer_props_in_db(retailer, properties):
+        if not properties:
+            return
         ex_props = list(retailer.properties.all())
-
         for prop in properties:
             found = None
             for ex_prop in ex_props:

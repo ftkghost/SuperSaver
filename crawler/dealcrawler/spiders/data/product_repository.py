@@ -11,7 +11,7 @@ class ProductRepository (Repository):
     def __init__(self, products):
         super().__init__(products, lambda p: p.landing_page)
 
-    def add_or_update_prod_in_db(self, prod_item, prod_image_url, stores, properties=None):
+    def add_or_update_prod_in_db(self, prod_item, prod_image_url, stores=None, properties=None):
         """
         Create or update product (or deal) in database and update repository memory store.
 
@@ -59,6 +59,8 @@ class ProductRepository (Repository):
 
     @staticmethod
     def _update_prod_stores_in_db(db_prod, stores):
+        if not stores:
+            return
         ex_stores = list(db_prod.stores.all())
         for store in stores:
             found = None
@@ -76,6 +78,8 @@ class ProductRepository (Repository):
 
     @staticmethod
     def _update_prod_props_in_db(db_prod, properties):
+        if not properties:
+            return
         ex_props = list(db_prod.properties.all())
         for prop in properties:
             found = None

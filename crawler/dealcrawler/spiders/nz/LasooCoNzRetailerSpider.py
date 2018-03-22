@@ -17,6 +17,7 @@ from store.models import Store, StoreProperty
 from supersaver.constants import *
 from supersaver.settings import make_internal_property_name
 from ..data.retailer_repository import RetailerRepository
+from .lasoo.util import *
 
 UTC_TO_NZ_TIMEZONE_DELTA = timedelta(seconds=12*3600)
 
@@ -150,7 +151,7 @@ class LasooCoNzRetailerSpider(BaseSpider):
             idx = script_text.find("showOfferDetailNearStoreMap")
             if idx >= 0:
                 store_json = substr_surrounded_by_chars(script_text, ('[', ']'), idx)
-                stores = self.parse_store_list_js_obj_syntax_string(store_json)
+                stores = parse_lasoo_store_js(store_json)
                 stores_by_id = {s['lasoo_id']: s for s in stores}
                 break
         store_list_elems = response.xpath(
@@ -163,7 +164,7 @@ class LasooCoNzRetailerSpider(BaseSpider):
             address = extract_first_value_with_xpath(elem, "td[2]/text()")
 
             store['lasoo_url'] = response.urljoin(store_url)
-            store['address'] = self.__class__.normalize_store_address(address)
+            store['address'] = normalize_lasoo_store_address(address)
             meta = {
                 "retailer": retailer,
                 "store": store
@@ -185,56 +186,6 @@ class LasooCoNzRetailerSpider(BaseSpider):
                               callback=self.parse_stores_from_response,
                               headers=self.__class__._get_http_headers(response.url),
                               meta=meta)
-
-    def parse_store_list_js_obj_syntax_string(self, js_obj_string):
-        # Store list json for google map looks like below:
-        # [
-        #     {id:13524191847234,latitude:-43.55240631,longitude:172.6368103,
-        #       displayName:"All Power -- Cyclone Cycles &amp; Mowers Ltd'"}
-        #     ,
-        #     {id:13524191847738,latitude:-43.51478577,longitude:172.64381409,
-        #       displayName:"All Power -- Edgeware Mowers &amp; Chainsaws Ltd'"}
-        #     ,
-        #     ...
-        # ]
-        js_obj_json = js_obj_string.replace("\t", "").replace("\n", "").replace("\r", "").replace('\'"', '"')
-        if js_obj_json.find("\"id\"") > 0:
-            store_list = json_loads(js_obj_json)
-        else:
-            # store list is in valid js syntax sugar string, not a valid json.
-            items = js_obj_json.split('},')
-            store_list = []
-            for item in items:
-                fields_str = item.strip('[{],')
-                if len(fields_str) == 0:
-                    continue
-                # We only need first 4 fields
-                fields = fields_str.split(',', 4)
-                if len(fields) < 4:
-                    self.log_debug("Invalid store js string {0}", fields_str)
-                    continue
-                id_and_value = fields[0].split(':')
-                latitude_and_value = fields[1].split(':')
-                longitude_and_value = fields[2].split(':')
-                display_name_and_value = fields[3].split(':', 2)
-                store = {
-                    id_and_value[0]: id_and_value[1],
-                    latitude_and_value[0]: float(latitude_and_value[1]),
-                    longitude_and_value[0]: float(longitude_and_value[1]),
-                    display_name_and_value[0]: display_name_and_value[1]
-                }
-                store_list.append(store)
-        store_items = []
-        for store in store_list:
-            # Normalise field name and value
-            item = {}
-            item['lasoo_id'] = str(store['id'])
-            item['display_name'] = self.__class__.normalize_store_display_name(store['displayName'])
-            item['name'] = item['display_name'].lower()
-            item['latitude'] = store['latitude']
-            item['longitude'] = store['longitude']
-            store_items.append(item)
-        return store_items
 
     def parse_store_details_from_response(self, response):
         retailer = response.meta['retailer']
@@ -334,14 +285,6 @@ class LasooCoNzRetailerSpider(BaseSpider):
                 nv = working_hours.strip()
                 return nv
         return None
-
-    @staticmethod
-    def normalize_store_display_name(raw_name):
-        return raw_name.replace(' -- ', ' - ').strip("'\"")
-
-    @staticmethod
-    def normalize_store_address(raw_address):
-        return raw_address.replace("\t", "").replace("\r", "").replace("\n", "")
 
     @classmethod
     def _get_http_headers(cls, referer):

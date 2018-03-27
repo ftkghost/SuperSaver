@@ -202,66 +202,8 @@ class LasooCoNzRetailerSpider(BaseSpider):
         if working_hours:
             store['working_hours'] = working_hours
         # Save and update store and its properties in database
-        self.add_or_update_store_in_db(store, retailer)
+        add_or_update_store_in_db(store, self.region, retailer)
         return None
-
-    def add_or_update_store_in_db(self, store_dict, retailer):
-        store_name = store_dict['name']
-        results = retailer.stores.filter(name=store_name)
-        if len(results) > 0:
-            # Update existing store
-            store = results[0]
-        else:
-            # Create new store
-            store = Store()
-            store.retailer = retailer
-            store.region = self.region
-            store.name = store_name
-        store.display_name = store_dict["display_name"]
-        store.latitude = None if 'latitude' not in store_dict else store_dict["latitude"]
-        store.longitude = None if 'longitude' not in store_dict else store_dict["longitude"]
-        store.tel = None if 'tel' not in store_dict else store_dict["tel"]
-        store.address = None if 'address' not in store_dict else store_dict["address"]
-        store.working_hours = None if 'working_hours' not in store_dict else store_dict["working_hours"]
-        store.active = True
-        store.save()
-
-        lasoo_id = store_dict['lasoo_id']
-        props = []
-        prop = StoreProperty()
-        prop.name = make_internal_property_name('lasoo_id')
-        prop.value = lasoo_id
-        props.append(prop)
-        if 'lasoo_url' in store_dict:
-            lasoo_url = store_dict['lasoo_url']
-            prop = StoreProperty()
-            prop.name = make_internal_property_name('lasoo_url')
-            prop.value = lasoo_url
-            props.append(prop)
-        self.__class__._update_store_props_in_db(store, props)
-
-    @staticmethod
-    def _update_store_props_in_db(store, properties):
-        ex_props = list(store.properties.all())
-        for prop in properties:
-            found = None
-            for ex_prop in ex_props:
-                if ex_prop.name == prop.name:
-                    found = ex_prop
-                    break
-            if not found:
-                # Create new props
-                prop.store = store
-                prop.save()
-            else:
-                if found.value != prop.value:
-                    # Update existing props
-                    found.value = prop.value
-                    found.save()
-                # Remove from pending deletion list
-                ex_props.remove(found)
-        for p in ex_props:
-            p.delete()
 
     @staticmethod
     def extract_working_hours(html_node):

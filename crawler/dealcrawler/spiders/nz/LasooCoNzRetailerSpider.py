@@ -229,13 +229,13 @@ class LasooCoNzRetailerSpider(BaseSpider):
         lasoo_id = store_dict['lasoo_id']
         props = []
         prop = StoreProperty()
-        prop.name = 'lasoo_id'
+        prop.name = make_internal_property_name('lasoo_id')
         prop.value = lasoo_id
         props.append(prop)
         if 'lasoo_url' in store_dict:
             lasoo_url = store_dict['lasoo_url']
             prop = StoreProperty()
-            prop.name = 'lasoo_url'
+            prop.name = make_internal_property_name('lasoo_url')
             prop.value = lasoo_url
             props.append(prop)
         self.__class__._update_store_props_in_db(store, props)

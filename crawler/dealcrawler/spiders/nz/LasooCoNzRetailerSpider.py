@@ -3,7 +3,6 @@ __author__ = 'qinpeng'
 
 import random
 from datetime import datetime, timedelta
-from json import loads as json_loads
 
 import scrapy
 
@@ -13,11 +12,9 @@ from dealcrawler.util import *
 from region.models import Region
 from retailer.models import RetailerProperty
 from source.models import DataSource
-from store.models import Store, StoreProperty
 from supersaver.constants import *
-from supersaver.settings import make_internal_property_name
-from ..data.retailer_repository import RetailerRepository
 from .lasoo.util import *
+from ..data.retailer_repository import RetailerRepository
 
 UTC_TO_NZ_TIMEZONE_DELTA = timedelta(seconds=12*3600)
 

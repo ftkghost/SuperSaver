@@ -1,3 +1,4 @@
+import re
 from json import loads as json_loads
 
 
@@ -36,8 +37,9 @@ def parse_lasoo_store_js(lasoo_store_js):
 
 
 def normalize_lasoo_store_display_name(raw_name):
-    return raw_name.replace(' -- ', ' - ').strip("'\"")
+    name = re.sub(r"\s*--\s*", ' - ', raw_name)
+    return name.replace('&amp;', '&').strip("'\"}")
 
 
 def normalize_lasoo_store_address(raw_address):
-    return raw_address.replace("\t", "").replace("\r", "").replace("\n", "")
+    return re.sub(r"[\t\r\n]+", "", raw_address)

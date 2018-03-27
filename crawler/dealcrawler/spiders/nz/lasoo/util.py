@@ -81,6 +81,7 @@ def add_or_update_store_in_db(store_dict, region, retailer):
         prop.value = lasoo_url
         props.append(prop)
     __update_store_props_in_db(store, props)
+    return store
 
 
 def __update_store_props_in_db(store, properties):

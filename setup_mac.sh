@@ -8,18 +8,14 @@ xcode-select --install
 # Pillow dependencies
 brew install libtiff libjpeg webp little-cms2
 
-# * Install mysql
-brew install mysql
-# Install 
-curl -O https://cdn.mysql.com//Downloads/Connector-Python/mysql-connector-python-2.1.7-osx10.12.dmg
 # * Install nginx (linux)
+
+# Setup mysql and user
+#./setup_mysql_db.sh '${db_user}' '${db_userpwd}'
+
+# Setup postgreSQL and user
+./setup_postgresql_db.sh '${db_user}'
 
 pip install -r requirements.txt
 
 ./patches/apply_patches.sh
-
-
-mysql -uroot -p<<EOF
-CREATE USER '${db_user}'@'localhost' IDENTIFIED BY '${db_userpwd}';
-flush PRIVILEGES;
-EOF

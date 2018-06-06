@@ -6,6 +6,8 @@ db_host=localhost
 # * Install mysql
 brew install postgresql
 
+pg_ctl start -D /usr/local/var/postgres -l logfile
+
 # Create a DB user with 'CREATEDB' attribute/permission.
 createuser ${db_user} --createdb
 

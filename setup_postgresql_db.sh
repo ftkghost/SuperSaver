@@ -9,5 +9,5 @@ brew install postgresql
 createuser ${db_user} --createdb
 
 psql -U ${db_user} <<EOF
-\password ${db_user}
+\password ${db_userpwd}
 EOF

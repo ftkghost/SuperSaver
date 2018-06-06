@@ -1,0 +1,13 @@
+TODO Features:
+High priority:
+* Google Ads integration.
+* Full text search Product
+    Index type GIN or GIST
+    Trigram similarity https://docs.djangoproject.com/en/2.0/ref/contrib/postgres/lookups/#trigram-similarity
+* Add GEO IP detection with GeoIP2.
+    https://dev.maxmind.com/
+    https://docs.djangoproject.com/en/2.0/ref/contrib/gis/geoip2/
+* Product categorization.
+
+Low priority:
+* User view history, behaviour targeting Ads

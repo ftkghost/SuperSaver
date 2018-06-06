@@ -1,4 +1,6 @@
 from django.db import models
+from django.contrib.postgres.search import SearchVectorField
+from django.contrib.postgres.indexes import GinIndex
 
 from uuid import uuid4
 
@@ -26,7 +28,7 @@ class Product (models.Model):
     unit = models.CharField(max_length=32, null=False, blank=True, default='')
     saved = models.CharField(max_length=64, null=True, blank=False, default=None)
     landing_page = models.CharField(max_length=512, null=False, blank=False, db_index=True)
-    fast_buy_link = models.CharField(max_length=512, null=True, blank=False, db_index=True, default=None)
+    fast_buy_link = models.CharField(max_length=512, null=True, blank=False, default=None)
 
     promotion_start_date = models.PositiveIntegerField(null=False)
     promotion_end_date = models.PositiveIntegerField(null=False)
@@ -42,6 +44,13 @@ class Product (models.Model):
     updated_time = models.DateTimeField(auto_now=True)
 
     active = models.BooleanField(default=True)
+
+    search_vector = SearchVectorField()
+
+    class Meta:
+        indexes = [
+            GinIndex(fields=['search_vector'], name='product_search_index')
+        ]
 
     def __repr__(self):
         return 'Product: id={0}, retailer={1}, title={2}, desc={3}, ' \

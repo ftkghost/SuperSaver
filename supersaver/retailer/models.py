@@ -1,4 +1,6 @@
 from django.db import models
+from uuid import uuid4
+
 from supersaver.constants import *
 from country.models import Country
 from source.models import DataSource
@@ -7,6 +9,7 @@ from common.property import Property
 
 class Retailer (models.Model):
     # Normalised name in lower case
+    id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     name = models.CharField(max_length=256, null=False, blank=False, db_index=True)
     display_name = models.CharField(max_length=256, null=False, blank=False)
     site = models.URLField(max_length=256, null=True, blank=False)

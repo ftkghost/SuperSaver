@@ -1,4 +1,5 @@
 from django.db import models
+from uuid import uuid4
 
 from region.models import Region
 from retailer.models import Retailer
@@ -9,6 +10,7 @@ class Store(models.Model):
     """
     Stores
     """
+    id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     retailer = models.ForeignKey(Retailer, on_delete=models.PROTECT, null=False, related_name='stores')
     region = models.ForeignKey(Region, on_delete=models.PROTECT, null=False, related_name='stores')
     name = models.CharField(max_length=256, null=False, blank=False, db_index=True)

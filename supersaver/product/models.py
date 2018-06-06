@@ -8,6 +8,7 @@ from retailer.models import Retailer
 from store.models import Store
 from category.models import Category, SourceCategory
 from common.property import Property
+from .managers import ProductManager
 
 
 class Product (models.Model):
@@ -44,6 +45,8 @@ class Product (models.Model):
     updated_time = models.DateTimeField(auto_now=True)
 
     active = models.BooleanField(default=True)
+    # Custom manager to facilitate product query.
+    objects = ProductManager()
 
     search_vector = SearchVectorField()
 

@@ -15,8 +15,8 @@ class Migration(migrations.Migration):
         migrations.RunSQL("""
             CREATE FUNCTION product_update_trigger() RETURNS trigger AS $$
             BEGIN
-                IF old IS NOT NULL 
-                  AND (new.title = old.title 
+                IF (TG_OP = 'UPDATE') 
+                    AND (new.title = old.title 
                     AND new.description = old.description 
                     AND new.landing_page = old.landing_page) THEN
                     return new;

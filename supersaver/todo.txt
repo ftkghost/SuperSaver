@@ -1,5 +1,6 @@
 TODO Features:
 High priority:
+* Save images to S3.
 * Google Ads integration.
 * Full text search Product
     Index type GIN or GIST

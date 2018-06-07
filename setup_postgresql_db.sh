@@ -18,7 +18,7 @@ EOF
 
 # Activate extensions for text search
 psql postgres<<EOF
-CREATE EXTENSION IF NOT EXISTS btree_gin;
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
-CREATE EXTENSION IF NOT EXISTS unaccent;
+CREATE EXTENSION IF NOT EXISTS btree_gin WITH SCHEMA pg_catalog;
+CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA pg_catalog;
+CREATE EXTENSION IF NOT EXISTS unaccent WITH SCHEMA pg_catalog;
 EOF

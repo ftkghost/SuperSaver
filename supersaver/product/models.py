@@ -7,7 +7,7 @@ from uuid import uuid4
 from retailer.models import Retailer
 from store.models import Store
 from category.models import Category, SourceCategory
-from common.property import Property
+from common.models import Property
 from .managers import ProductManager
 
 

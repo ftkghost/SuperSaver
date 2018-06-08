@@ -4,7 +4,7 @@ from uuid import uuid4
 from supersaver.constants import *
 from country.models import Country
 from source.models import DataSource
-from common.property import Property
+from common.models import Property
 
 
 class Retailer (models.Model):

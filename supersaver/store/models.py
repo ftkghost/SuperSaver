@@ -3,7 +3,7 @@ from uuid import uuid4
 
 from region.models import Region
 from retailer.models import Retailer
-from common.property import Property
+from common.models import Property
 
 
 class Store(models.Model):

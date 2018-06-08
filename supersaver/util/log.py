@@ -4,7 +4,7 @@ from sca.sca_settings import SCA_SERVICE_LOGGER_NAME
 
 
 def _get_socket_logger(source):
-    logger = logging.getLogger(SCA_SERVICE_LOGGER_NAME)
+    logger = logging.getLogger(SERVICE_LOGGER_NAME)
     for handler in logger.handlers:
         if isinstance(handler, logging.handlers.SocketHandler):
             handler.closeOnError = True

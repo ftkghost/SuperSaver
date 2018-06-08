@@ -14,6 +14,15 @@ import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_HOME = BASE_DIR
+
+
+# This is used so that application data can hook into specific sites and
+# a single database can manage content for multiple sites.
+SITE_NAME = "Supersaver"
+SITE_DOMAIN = "supersaver.co.nz"
+DEFAULT_URL_SCHEME = "https"
+WEBSITE_HOME = DEFAULT_URL_SCHEME + "://" + SITE_DOMAIN
 
 
 # Quick-start development settings - unsuitable for production
@@ -59,7 +68,10 @@ MIDDLEWARE_CLASSES = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'common.middleware.SqlInspectionMiddleware'
+    'core.middleware.ApiErrorMiddleware',
+    'core.middleware.ApiResponseMiddleware',
+    'core.middleware.MiniMobileDetectorMiddleware',
+    'core.middleware.SqlInspectionMiddleware',
 ]
 
 ROOT_URLCONF = 'supersaver.urls'
@@ -67,7 +79,9 @@ ROOT_URLCONF = 'supersaver.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            os.path.join(PROJECT_HOME, 'templates')
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -109,9 +123,6 @@ DATABASES = {
     }
 }
 
-import pymysql
-pymysql.install_as_MySQLdb()
-
 
 # Password validation
 # https://docs.djangoproject.com/en/2.0/ref/settings/#auth-password-validators
@@ -151,11 +162,70 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
+MEDIA_ROOT = '/tmp/ss_img_upload'
+MEDIA_URL = 'http://localhost:8080/ss_img_upload/'
+
+STATICFILES_DIRS = (
+    # Put strings here, like "/home/html/static" or "C:/www/django/static".
+    # Always use forward slashes, even on Windows.
+    # Don't forget to use absolute paths, not relative paths.
+    os.path.join(PROJECT_HOME, STATIC_URL),
+)
+
+# List of finder classes that know how to find static files in
+# various locations.
+STATICFILES_FINDERS = (
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+    # 'django.contrib.staticfiles.finders.DefaultStorageFinder',
+)
+
+
+# Supersaver custom settings
+
+IMAGE_JPG_QUALITY_PARAMS = {
+    'quality': 80,
+    'progressive': True
+}
+
 INTERNAL_PROPERTY_NAME_PREFIX = '__'
 
 
 def make_internal_property_name(name):
     return INTERNAL_PROPERTY_NAME_PREFIX + name
+
+
+def load_module_settings(apps):
+    import importlib
+    from os import path
+    for app in apps:
+        if app.startswith('django') or app.find('.') >= 0:
+            continue # Only import module settings from our project
+        module_setting_file = BASE_DIR + '/' + app + '/settings.py'
+        if not path.exists(module_setting_file):
+            continue
+        try:
+            # import module settings into settings of current scope
+            my_module = importlib.import_module(app + '.settings')
+            module_settings = dict(filter(lambda x: not x[0].startswith('_'), my_module.__dict__.items()))
+            current_scope = globals()
+            current_scope.update(module_settings)
+        except ImportError as error:
+            print("Failed to import {0} settings.\n{1}".format(app, error))
+            pass
+
+
+__module_settings_imported = False
+if not __module_settings_imported:
+    load_module_settings(INSTALLED_APPS)
+    __module_settings_imported = True
+
+# Import ext service settings
+try:
+    from .ext_service_settings import *
+except ImportError as e:
+    print('Failed to import ext-service settings. Error:' + e)
+    pass
 
 # Import all local setting for developing and testing
 try:
@@ -163,3 +233,7 @@ try:
 except ImportError as e:
     print('Failed to import local_settings. Error:' + e)
     pass
+
+if DATABASES['default']['ENGINE'] == 'django.db.backends.mysql':
+    import pymysql
+    pymysql.install_as_MySQLdb()
